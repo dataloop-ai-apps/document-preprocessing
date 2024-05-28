@@ -36,6 +36,8 @@ class PreprocessorRunner(dl.BaseServiceRunner):
         """
         node = context.node
         to_spell = node.metadata['customNodeConfig']['to_spell']
+        # local test
+        # to_spell = False
 
         # Download path - original items
         local_path = os.path.join(os.getcwd(), 'datasets', items[0].dataset.id, 'text_files')

@@ -27,13 +27,14 @@ class ConvertorRunner(dl.BaseServiceRunner):
         :param item: Dataloop item, pdf file
         :return: New text items paths (list)
         """
-        # node = context.node
-        # chunking_strategy = node.metadata['customNodeConfig']['chunking_strategy']
-        # max_chunk_size = node.metadata['customNodeConfig']['max_chunk_size']
-        # chunk_overlap = node.metadata['customNodeConfig']['chunk_overlap']
-        chunking_strategy = 'nltk-paragraphs'
-        max_chunk_size = 300
-        chunk_overlap = 20
+        node = context.node
+        chunking_strategy = node.metadata['customNodeConfig']['chunking_strategy']
+        max_chunk_size = node.metadata['customNodeConfig']['max_chunk_size']
+        chunk_overlap = node.metadata['customNodeConfig']['chunk_overlap']
+        # local test
+        # chunking_strategy = 'nltk-paragraphs'
+        # max_chunk_size = 300
+        # chunk_overlap = 20
 
         suffix = Path(item.name).suffix
         if not suffix == '.pdf':
@@ -75,9 +76,9 @@ class ConvertorRunner(dl.BaseServiceRunner):
                                                                                           'original_item_id': item.id}}}
                                                   )
 
-        # TODO: RAISE IF NONE
+        # raise if none
         if crafted_items is None:
-            crafted_items = []
+            raise dl.PlatformException(f"No items was uploaded! local paths: {text_files_paths}")
         elif isinstance(crafted_items, dl.Item):
             crafted_items = [crafted_items]
         else:
@@ -87,11 +88,8 @@ class ConvertorRunner(dl.BaseServiceRunner):
         for file_path in text_files_paths:
             if os.path.exists(file_path):
                 os.remove(file_path)
-                print(f"{file_path} removed")
             else:
-                print(f"{file_path} does not exist")
-
-        # os.remove(item_local_path) # TODO:
+                logger.warning(f"{file_path} does not exist, cannot be removed")
 
         return crafted_items
 
