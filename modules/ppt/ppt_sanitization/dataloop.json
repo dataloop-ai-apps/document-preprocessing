@@ -1,0 +1,108 @@
+{
+  "displayName": "Sanitize PPT",
+  "name": "sanitize-ppt-app",
+  "scope": "project",
+  "version": "0.0.28",
+  "description": "An application for sanitizing PPT files from all sorts of visual identities",
+  "attributes": {
+    "Provider": "Dataloop",
+    "Category": "Pipeline",
+    "Pipeline Type": "Node",
+    "Node Type": "Other"
+  },
+    "codebase": {
+    "type": "git",
+    "gitUrl": "https://github.com/dataloop-ai-apps/text-preprocessing.git",
+    "gitTag": "0.0.28"
+  },
+  "components": {
+    "pipelineNodes": [
+      {
+        "invoke": {
+          "type": "function",
+          "namespace": "sanitize-ppt-service.sanitize_ppt_module.strip_and_preserve_presentation"
+        },
+        "name": "sanitize-ppt",
+        "categories": [
+          "Text-Preprocessing"
+        ],
+        "displayName": "Sanitize PPT",
+        "description": "Converting PDF to Image items",
+        "scope": "node",
+        "configuration": {
+          "fields": [
+            {
+              "name": "name",
+              "title": "Node Name",
+              "props": {
+                "title": true,
+                "type": "string",
+                "default": "Sanitize PPT",
+                "required": true,
+                "placeholder": "Insert node name"
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-input"
+            }
+          ]
+        }
+      }
+    ],
+    "modules": [
+      {
+        "name": "sanitize_ppt_module",
+        "entryPoint": "modules/ppt/ppt_sanitization/ppt_sanitization.py",
+        "className": "ServiceRunner",
+        "initInputs": [
+          {
+            "type": "String",
+            "name": "open_ai_key"
+          }
+        ],
+        "functions": [
+          {
+            "name": "strip_and_preserve_presentation",
+            "input": [
+              {
+                "type": "Item",
+                "name": "item"
+              }
+            ],
+            "output": [
+              {
+                "type": "Item",
+                "name": "item"
+              }
+            ],
+            "displayIcon": "icon-dl-item-filled",
+            "displayName": "Sanitize PPT"
+          }
+        ]
+      }
+    ],
+    "services": [
+      {
+        "name": "sanitize-ppt-service",
+        "moduleName": "sanitize_ppt_module",
+        "secrets": [
+        ],
+        "runtime": {
+          "podType": "regular-m",
+          "runnerImage": "dataloopai/dtlpy-agent:cpu.py3.10.opencv",
+          "concurrency": 10,
+          "autoscaler": {
+            "minReplicas": 0,
+            "maxReplicas": 2,
+            "queueLength": 10
+          }
+        },
+        "operation": "none"
+      }
+    ]
+  }
+}
