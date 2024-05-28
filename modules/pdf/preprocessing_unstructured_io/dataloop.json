@@ -10,9 +10,9 @@
     "Pipeline Type": "Node",
     "Node Type": "Other"
   },
-    "codebase": {
+  "codebase": {
     "type": "git",
-    "gitUrl": "https://github.com/dataloop-ai-apps/text-preprocessing.git",
+    "gitUrl": "https://github.com/dataloop-ai-apps/document-preprocessing.git",
     "gitTag": "0.0.28"
   },
   "components": {
@@ -236,7 +236,7 @@
         ],
         "runtime": {
           "podType": "regular-m",
-          "runnerImage": "dataloopai/dtlpy-agent:cpu.py3.10.opencv",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.1",
           "concurrency": 10,
           "autoscaler": {
             "minReplicas": 0,
@@ -253,7 +253,7 @@
         ],
         "runtime": {
           "podType": "regular-m",
-          "runnerImage": "dataloopai/dtlpy-agent:cpu.py3.10.opencv",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.1",
           "concurrency": 10,
           "autoscaler": {
             "minReplicas": 0,
