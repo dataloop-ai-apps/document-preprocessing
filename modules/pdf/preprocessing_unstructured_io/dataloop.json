@@ -179,7 +179,7 @@
     "modules": [
       {
         "name": "pdf_to_text_v2",
-        "entryPoint": "modules/text-preprocessing/converter_runner.py",
+        "entryPoint": "modules/pdf/preprocessing_unstructured_io/converter_runner.py",
         "className": "ConvertorRunner",
         "initInputs": [],
         "functions": [
@@ -204,7 +204,7 @@
       },
       {
         "name": "preprocess_text_v2",
-        "entryPoint": "modules/text-preprocessing/preprocess_runner.py",
+        "entryPoint": "modules/pdf/preprocessing_unstructured_io/preprocess_runner.py",
         "className": "PreprocessorRunner",
         "initInputs": [],
         "functions": [
