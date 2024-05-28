@@ -10,7 +10,7 @@
     "Pipeline Type": "Node",
     "Node Type": "Other"
   },
-    "codebase": {
+  "codebase": {
     "type": "git",
     "gitUrl": "https://github.com/dataloop-ai-apps/document-preprocessing.git",
     "gitTag": "0.0.28"
