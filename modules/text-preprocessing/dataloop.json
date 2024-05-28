@@ -1,0 +1,268 @@
+{
+  "displayName": "PDF to Preprocessed Text",
+  "name": "pdf_to_texts-app",
+  "scope": "public",
+  "version": "0.0.28",
+  "description": "An application for converting PDF to preprocessed Text items",
+  "attributes": {
+    "Provider": "Dataloop",
+    "Category": "Pipeline",
+    "Pipeline Type": "Node",
+    "Node Type": "Other"
+  },
+    "codebase": {
+    "type": "git",
+    "gitUrl": "https://github.com/dataloop-ai-apps/text-preprocessing.git",
+    "gitTag": "0.0.28"
+  },
+  "components": {
+    "pipelineNodes": [
+      {
+        "invoke": {
+          "type": "function",
+          "namespace": "pdf-to-text-v2.pdf_to_text_v2.pdf_item_to_text"
+        },
+        "name": "pdf_to_text",
+        "categories": [
+          "Text-Preprocessing"
+        ],
+        "displayName": "PDF to Text",
+        "description": "Converting PDF to Text items",
+        "scope": "node",
+        "configuration": {
+          "fields": [
+            {
+              "name": "name",
+              "title": "Node Name",
+              "props": {
+                "title": true,
+                "type": "string",
+                "default": "PDF-to-Text",
+                "required": true,
+                "placeholder": "Insert node name"
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-input"
+            },
+            {
+              "name": "chunking_strategy",
+              "title": "chunking strategy",
+              "props": {
+                "type": "string",
+                "required": true,
+                "options": [
+                  {
+                    "value": "fixed-size",
+                    "label": "fixed-size"
+                  },
+                  {
+                    "value": "recursive",
+                    "label": "recursive"
+                  },
+                  {
+                    "value": "nltk-sentence",
+                    "label": "nltk-sentence"
+                  },
+                  {
+                    "value": "nltk-paragraphs",
+                    "label": "nltk-paragraphs"
+                  },
+                  {
+                    "value": "1-chunk",
+                    "label": "1-chunk"
+                  }
+                ]
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error",
+                  "errorMessage": "Chunking Strategy is required"
+                }
+              ],
+              "widget": "dl-select"
+            },
+            {
+              "name": "max_chunk_size",
+              "title": "max chunk size",
+              "props": {
+                "type": "number",
+                "default": 300,
+                "min": 1,
+                "max": 1000,
+                "step": 1,
+                "title": true,
+                "required": true
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-slider"
+            },
+            {
+              "name": "chunk_overlap",
+              "title": "chunk overlap",
+              "props": {
+                "type": "number",
+                "default": 20,
+                "min": 1,
+                "max": 1000,
+                "step": 1,
+                "title": true,
+                "required": true
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-slider"
+            }
+          ]
+        }
+      },
+      {
+        "invoke": {
+          "type": "function",
+          "namespace": "preprocess-text-v2.preprocess_text_v2.preprocess_text"
+        },
+        "name": "preprocess",
+        "categories": [
+          "Text-Preprocessing"
+        ],
+        "displayName": "Text Preprocessing",
+        "description": "Preprocess text items",
+        "scope": "node",
+        "configuration": {
+          "fields": [
+            {
+              "name": "name",
+              "title": "Node Name",
+              "props": {
+                "title": true,
+                "type": "string",
+                "default": "Preprocess-Text",
+                "required": true,
+                "placeholder": "Insert node name"
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-input"
+            },
+            {
+              "name": "to_spell",
+              "title": "to spell",
+              "props": {
+                "type": "boolean",
+                "title": true,
+                "default": false
+              },
+              "widget": "dl-checkbox"
+            }
+          ]
+        }
+      }
+    ],
+    "modules": [
+      {
+        "name": "pdf_to_text_v2",
+        "entryPoint": "modules/text-preprocessing/converter_runner.py",
+        "className": "ConvertorRunner",
+        "initInputs": [],
+        "functions": [
+          {
+            "name": "pdf_item_to_text",
+            "input": [
+              {
+                "type": "Item",
+                "name": "item"
+              }
+            ],
+            "output": [
+              {
+                "type": "Item[]",
+                "name": "items"
+              }
+            ],
+            "displayIcon": "icon-dl-item-filled",
+            "displayName": "PDF item to texts"
+          }
+        ]
+      },
+      {
+        "name": "preprocess_text_v2",
+        "entryPoint": "modules/text-preprocessing/preprocess_runner.py",
+        "className": "PreprocessorRunner",
+        "initInputs": [],
+        "functions": [
+          {
+            "name": "preprocess_text",
+            "input": [
+              {
+                "type": "Item[]",
+                "name": "items"
+              }
+            ],
+            "output": [
+              {
+                "type": "Item[]",
+                "name": "items"
+              }
+            ],
+            "displayIcon": "icon-dl-item-filled",
+            "displayName": "Text item to clean text"
+          }
+        ]
+      }
+    ],
+    "services": [
+      {
+        "name": "pdf-to-text-v2",
+        "moduleName": "pdf_to_text_v2",
+        "secrets": [
+        ],
+        "runtime": {
+          "podType": "regular-m",
+          "runnerImage": "dataloopai/dtlpy-agent:cpu.py3.10.opencv",
+          "concurrency": 10,
+          "autoscaler": {
+            "minReplicas": 0,
+            "maxReplicas": 2,
+            "queueLength": 10
+          }
+        },
+        "operation": "none"
+      },
+      {
+        "name": "preprocess-text-v2",
+        "moduleName": "preprocess_text_v2",
+        "secrets": [
+        ],
+        "runtime": {
+          "podType": "regular-m",
+          "runnerImage": "dataloopai/dtlpy-agent:cpu.py3.10.opencv",
+          "concurrency": 10,
+          "autoscaler": {
+            "minReplicas": 0,
+            "maxReplicas": 2,
+            "queueLength": 10
+          }
+        },
+        "operation": "none"
+      }
+    ]
+  }
+}
