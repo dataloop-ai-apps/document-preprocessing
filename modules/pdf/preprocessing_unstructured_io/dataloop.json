@@ -1,6 +1,6 @@
 {
   "displayName": "PDF to Preprocessed Text",
-  "name": "pdf_to_texts-app",
+  "name": "pdf_to_text",
   "scope": "public",
   "version": "0.0.29",
   "description": "An application for converting PDF to preprocessed Text items",

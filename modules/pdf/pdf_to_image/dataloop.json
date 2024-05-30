@@ -1,6 +1,6 @@
 {
   "displayName": "PDF to Images",
-  "name": "pdf_to_images-app",
+  "name": "pdf_to_image",
   "scope": "public",
   "version": "0.0.29",
   "description": "An application for converting PDF to Image items",
