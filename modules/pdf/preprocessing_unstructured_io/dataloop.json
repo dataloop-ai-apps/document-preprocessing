@@ -2,7 +2,7 @@
   "displayName": "PDF to Preprocessed Text",
   "name": "pdf_to_text",
   "scope": "public",
-  "version": "0.0.30",
+  "version": "0.0.31",
   "description": "An application for converting PDF to preprocessed Text items",
   "attributes": {
     "Provider": "Dataloop",
@@ -13,7 +13,7 @@
   "codebase": {
     "type": "git",
     "gitUrl": "https://github.com/dataloop-ai-apps/document-preprocessing.git",
-    "gitTag": "0.0.30"
+    "gitTag": "0.0.31"
   },
   "components": {
     "pipelineNodes": [
