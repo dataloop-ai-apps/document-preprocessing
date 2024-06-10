@@ -197,7 +197,7 @@
                 "name": "items"
               }
             ],
-            "displayIcon": "icon-dl-item-filled",
+            "displayIcon": "icon-dl-langchain",
             "displayName": "PDF item to texts"
           }
         ]
@@ -222,7 +222,7 @@
                 "name": "items"
               }
             ],
-            "displayIcon": "icon-dl-item-filled",
+            "displayIcon": "icon-dl-unstucturedio",
             "displayName": "Text item to clean text"
           }
         ]
