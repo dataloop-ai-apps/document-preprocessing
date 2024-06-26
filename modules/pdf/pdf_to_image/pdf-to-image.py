@@ -68,7 +68,7 @@ class ServiceRunner(dl.BaseServiceRunner):
 
         os.remove(item_local_path)
 
-        return img_items
+        return [item.id for item in img_items]
 
     @staticmethod
     def convert_pdf_to_image(file_path: str) -> List:
@@ -120,9 +120,9 @@ class ServiceRunner(dl.BaseServiceRunner):
 
 if __name__ == '__main__':
     dl.setenv('rc')
-    project = dl.projects.get(project_name="text-project")
-    dataset = project.datasets.get(dataset_name="mortgage-dataset")
-    item = dataset.items.get(item_id='65f9984b6861c61ce19447d9')
+    project = dl.projects.get(project_id="b8eeea8c-ba02-463e-b975-89a50b7e8448")
+    dataset = project.datasets.get(dataset_name="text")
+    item = dataset.items.get(item_id='667bede1341258751491bd7d')
 
     # dl.setenv('prod')
     # project = dl.projects.get(project_name='text-project')
