@@ -41,7 +41,9 @@ class ServiceRunner(dl.BaseServiceRunner):
                                               remote_path='/images-files',
                                               item_metadata={
                                                   'user': {'pdf_to_image': {'converted_to_image': True,
-                                                                            'original_item_id': item.id}}}
+                                                                            'original_item_id': item.id},
+                                                           'parentItemId': item.id
+                                                           }}
                                               )
 
         # Uploader returns generator or a single item, or None
@@ -53,6 +55,7 @@ class ServiceRunner(dl.BaseServiceRunner):
             first_item = next((item for item in img_items if item.name.endswith('0.png')))
         else:
             first_item = img_items
+            img_items = [first_item]
 
         if apply_modality is True:
             # if the pdf contain more than 1 page, only the first image will serve as preview modality.
