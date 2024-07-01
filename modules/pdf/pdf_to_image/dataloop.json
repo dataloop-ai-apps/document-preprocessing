@@ -80,8 +80,8 @@
             ],
             "output": [
               {
-                "type": "Item",
-                "name": "item"
+                "type": "Item[]",
+                "name": "image_item"
               }
             ],
             "displayIcon": "icon-dl-item-filled",
