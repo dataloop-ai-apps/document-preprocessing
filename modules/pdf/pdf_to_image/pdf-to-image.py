@@ -49,6 +49,7 @@ class ServiceRunner(dl.BaseServiceRunner):
         # Uploader returns generator or a single item, or None
         if img_items is None:
             first_item = None
+            img_items = list()
             apply_modality = False
             logger.info("Uploading items resulted in None. Skipping, as apply modality is true.")
         elif not isinstance(img_items, dl.Item):
@@ -71,7 +72,7 @@ class ServiceRunner(dl.BaseServiceRunner):
 
         os.remove(item_local_path)
 
-        return [item.id for item in img_items]
+        return [result_item.id for result_item in img_items]
 
     @staticmethod
     def convert_pdf_to_image(file_path: str) -> List:
