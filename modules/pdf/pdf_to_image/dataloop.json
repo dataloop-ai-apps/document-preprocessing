@@ -6,9 +6,10 @@
   "description": "An application for converting PDF to Image items",
   "attributes": {
     "Provider": "Dataloop",
-    "Category": "Pipeline",
-    "Pipeline Type": "Node",
-    "Node Type": "Other"
+    "Category": "Application",
+    "Application Type": [
+      "Pipeline Node"
+    ]
   },
   "codebase": {
     "type": "git",
@@ -94,8 +95,7 @@
       {
         "name": "pdf-to-image-v2",
         "moduleName": "pdf_to_image_v2",
-        "secrets": [
-        ],
+        "secrets": [],
         "runtime": {
           "podType": "regular-m",
           "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.1",
