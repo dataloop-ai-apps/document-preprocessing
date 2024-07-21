@@ -5,10 +5,13 @@
   "version": "0.0.30",
   "description": "An application for converting PDF to Image items",
   "attributes": {
+    "Category": "Application",
     "Provider": "Dataloop",
-    "Category": "Pipeline",
-    "Pipeline Type": "Node",
-    "Node Type": "Other"
+    "Deployed By": "Dataloop",
+    "Application Type": "Pipeline Node",
+    "Media Type": [
+      "Text"
+    ]
   },
   "codebase": {
     "type": "git",
