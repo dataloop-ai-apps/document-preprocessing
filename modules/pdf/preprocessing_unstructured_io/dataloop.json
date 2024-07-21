@@ -8,7 +8,7 @@
     "Category": "Application",
     "Provider": "Dataloop",
     "Deployed By": "Dataloop",
-    "Application Type": "Pipeline Node",
+    "Application Type": ["Pipeline Node"],
     "Media Type": [
       "Text"
     ]
