@@ -86,7 +86,7 @@
     "modules": [
       {
         "name": "pdf_to_image_v2",
-        "computeConfig": "pdf_to_image_v2",
+        "computeConfig": "pdf-to-image-v2",
         "entryPoint": "modules/pdf/pdf_to_image/pdf-to-image.py",
         "className": "ServiceRunner",
         "initInputs": [],
