@@ -29,7 +29,7 @@
         "categories": [
           "Text-Preprocessing"
         ],
-        "displayName": "PDF to Image-fgw",
+        "displayName": "PDF to Image",
         "description": "Converting PDF to Image items",
         "scope": "node",
         "configuration": {
@@ -40,7 +40,7 @@
               "props": {
                 "title": true,
                 "type": "string",
-                "default": "PDF-to-Image-fgw",
+                "default": "PDF-to-Image",
                 "required": true,
                 "placeholder": "Insert node name"
               },
