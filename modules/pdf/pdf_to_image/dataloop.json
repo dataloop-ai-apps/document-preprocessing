@@ -1,19 +1,14 @@
 {
-  "displayName": "PDF to Images",
-  "name": "pdf_to_images-app",
-  "scope": "public",
-  "version": "0.0.28",
+  "displayName": "PDF to Images-fgw",
+  "name": "pdf_to_images-app-fgw",
+  "scope": "project",
+  "version": "0.0.31",
   "description": "An application for converting PDF to Image items",
   "attributes": {
     "Provider": "Dataloop",
     "Category": "Pipeline",
     "Pipeline Type": "Node",
     "Node Type": "Other"
-  },
-  "codebase": {
-    "type": "git",
-    "gitUrl": "https://github.com/dataloop-ai-apps/document-preprocessing.git",
-    "gitTag": "0.0.28"
   },
   "components": {
     "pipelineNodes": [
@@ -26,7 +21,7 @@
         "categories": [
           "Text-Preprocessing"
         ],
-        "displayName": "PDF to Image",
+        "displayName": "PDF to Image-fgw",
         "description": "Converting PDF to Image items",
         "scope": "node",
         "configuration": {
@@ -37,7 +32,7 @@
               "props": {
                 "title": true,
                 "type": "string",
-                "default": "PDF-to-Image",
+                "default": "PDF-to-Image-fgw",
                 "required": true,
                 "placeholder": "Insert node name"
               },

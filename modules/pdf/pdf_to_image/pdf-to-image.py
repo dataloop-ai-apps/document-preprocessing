@@ -41,8 +41,7 @@ class ServiceRunner(dl.BaseServiceRunner):
                                               remote_path='/images-files',
                                               item_metadata={
                                                   'user': {'pdf_to_image': {'converted_to_image': True,
-                                                                            'original_item_id': item.id},
-                                                           'parentItemId': item.id
+                                                                            'original_item_id': item.id}
                                                            }}
                                               )
 
