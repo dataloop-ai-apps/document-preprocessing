@@ -41,18 +41,21 @@ class ServiceRunner(dl.BaseServiceRunner):
                                               remote_path='/images-files',
                                               item_metadata={
                                                   'user': {'pdf_to_image': {'converted_to_image': True,
-                                                                            'original_item_id': item.id}}}
+                                                                            'original_item_id': item.id}
+                                                           }}
                                               )
 
         # Uploader returns generator or a single item, or None
         if img_items is None:
             first_item = None
+            img_items = list()
             apply_modality = False
             logger.info("Uploading items resulted in None. Skipping, as apply modality is true.")
         elif not isinstance(img_items, dl.Item):
             first_item = next((item for item in img_items if item.name.endswith('0.png')))
         else:
             first_item = img_items
+            img_items = [first_item]
 
         if apply_modality is True:
             # if the pdf contain more than 1 page, only the first image will serve as preview modality.
@@ -68,7 +71,7 @@ class ServiceRunner(dl.BaseServiceRunner):
 
         os.remove(item_local_path)
 
-        return img_items
+        return [result_item.id for result_item in img_items]
 
     @staticmethod
     def convert_pdf_to_image(file_path: str) -> List:
@@ -119,15 +122,10 @@ class ServiceRunner(dl.BaseServiceRunner):
 
 
 if __name__ == '__main__':
-    dl.setenv('rc')
-    project = dl.projects.get(project_name="text-project")
-    dataset = project.datasets.get(dataset_name="mortgage-dataset")
-    item = dataset.items.get(item_id='65f9984b6861c61ce19447d9')
-
-    # dl.setenv('prod')
-    # project = dl.projects.get(project_name='text-project')
-    # dataset = project.datasets.get(dataset_name='mortgage-data')
-    # item = dataset.items.get(item_id='660e92f3aadac605ee7713db')
+    dl.setenv('<select-environment>')
+    project = dl.projects.get(project_id="<project-id>")
+    dataset = project.datasets.get(dataset_name="<dataset-name>")
+    item = dataset.items.get(item_id='<item-id>')
 
     s = ServiceRunner()
     s.pdf_item_to_images(item=item, context=dl.Context())
