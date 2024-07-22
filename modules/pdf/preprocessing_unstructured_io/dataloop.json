@@ -1,19 +1,22 @@
 {
   "displayName": "PDF to Preprocessed Text",
-  "name": "pdf_to_texts-app",
+  "name": "pdf_to_text",
   "scope": "public",
-  "version": "0.0.28",
+  "version": "0.0.32",
   "description": "An application for converting PDF to preprocessed Text items",
   "attributes": {
+    "Category": "Application",
     "Provider": "Dataloop",
-    "Category": "Pipeline",
-    "Pipeline Type": "Node",
-    "Node Type": "Other"
+    "Deployed By": "Dataloop",
+    "Application Type": ["Pipeline Node"],
+    "Media Type": [
+      "Text"
+    ]
   },
   "codebase": {
     "type": "git",
     "gitUrl": "https://github.com/dataloop-ai-apps/document-preprocessing.git",
-    "gitTag": "0.0.28"
+    "gitTag": "0.0.32"
   },
   "components": {
     "pipelineNodes": [
@@ -197,7 +200,7 @@
                 "name": "items"
               }
             ],
-            "displayIcon": "icon-dl-item-filled",
+            "displayIcon": "icon-dl-langchain",
             "displayName": "PDF item to texts"
           }
         ]
@@ -222,7 +225,7 @@
                 "name": "items"
               }
             ],
-            "displayIcon": "icon-dl-item-filled",
+            "displayIcon": "icon-dl-unstucturedio",
             "displayName": "Text item to clean text"
           }
         ]
