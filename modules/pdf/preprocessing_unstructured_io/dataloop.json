@@ -8,7 +8,9 @@
     "Category": "Application",
     "Provider": "Dataloop",
     "Deployed By": "Dataloop",
-    "Application Type": ["Pipeline Node"],
+    "Application Type": [
+      "Pipeline Node"
+    ],
     "Media Type": [
       "Text"
     ]
@@ -19,6 +21,35 @@
     "gitTag": "0.0.33"
   },
   "components": {
+    "computeConfigs": [
+      {
+        "name": "pdf-to-text-v2",
+        "runtime": {
+          "podType": "regular-m",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.1",
+          "concurrency": 10,
+          "autoscaler": {
+            "minReplicas": 0,
+            "maxReplicas": 2,
+            "queueLength": 10
+          }
+        }
+      },
+      {
+        "name": "preprocess-text-v2",
+        "moduleName": "preprocess_text_v2",
+        "runtime": {
+          "podType": "regular-m",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.1",
+          "concurrency": 10,
+          "autoscaler": {
+            "minReplicas": 0,
+            "maxReplicas": 2,
+            "queueLength": 10
+          }
+        }
+      }
+    ],
     "pipelineNodes": [
       {
         "invoke": {
@@ -182,6 +213,7 @@
     "modules": [
       {
         "name": "pdf_to_text_v2",
+        "computeConfig": "pdf-to-text-v2",
         "entryPoint": "modules/pdf/preprocessing_unstructured_io/converter_runner.py",
         "className": "ConvertorRunner",
         "initInputs": [],
@@ -207,6 +239,7 @@
       },
       {
         "name": "preprocess_text_v2",
+        "computeConfig": "preprocess-text-v2",
         "entryPoint": "modules/pdf/preprocessing_unstructured_io/preprocess_runner.py",
         "className": "PreprocessorRunner",
         "initInputs": [],
@@ -229,42 +262,6 @@
             "displayName": "Text item to clean text"
           }
         ]
-      }
-    ],
-    "services": [
-      {
-        "name": "pdf-to-text-v2",
-        "moduleName": "pdf_to_text_v2",
-        "secrets": [
-        ],
-        "runtime": {
-          "podType": "regular-m",
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.1",
-          "concurrency": 10,
-          "autoscaler": {
-            "minReplicas": 0,
-            "maxReplicas": 2,
-            "queueLength": 10
-          }
-        },
-        "operation": "none"
-      },
-      {
-        "name": "preprocess-text-v2",
-        "moduleName": "preprocess_text_v2",
-        "secrets": [
-        ],
-        "runtime": {
-          "podType": "regular-m",
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.1",
-          "concurrency": 10,
-          "autoscaler": {
-            "minReplicas": 0,
-            "maxReplicas": 2,
-            "queueLength": 10
-          }
-        },
-        "operation": "none"
       }
     ]
   }
