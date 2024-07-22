@@ -11,11 +11,11 @@ from pptx import Presentation
 
 class RemoveSensitiveText(dl.BaseServiceRunner):
     def __init__(self, openai_key):
-        openai.api_key = os.environ.get(openai_key)
+        self.client = openai.OpenAI(api_key=os.environ.get(openai_key))
         self.ner_prompt_message = """
                 in the following text, follow these guidelines to respond with the corrected text.
                  Only send back the corrected text, do not decorate with any other text:
-                 1. If the text is a name of a company, organization, non-profit institute of any type, replace the name with [Clients]
+                 1. If the text is a name of a company, organization, non-profit institute of any type, replace the name with [Org]
                  2. If the text is a location such as name of a country, city, village, street, state, site or region, replace it with [Location]
                  3. If the text is a person name, replace with [Person]
                  4. If the text is a project name in the structure of 'Project Name', replace this text with [Project]
@@ -53,7 +53,7 @@ class RemoveSensitiveText(dl.BaseServiceRunner):
         return base64.b64encode(image_path).decode('utf-8')
 
     def identify_visual_identity(self, image_buffer):
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.create(
             model="gpt-4o",  # gpt-4
             messages=[
                 {"role": "system",
@@ -70,7 +70,7 @@ class RemoveSensitiveText(dl.BaseServiceRunner):
                 ],
             max_tokens=10
             )
-        return response['choices'][0]['message']['content']
+        return response.choices[0].message.content
 
     def strip_and_preserve_presentation(self, item: dl.Item):
         # Load the existing presentation
@@ -130,7 +130,7 @@ class RemoveSensitiveText(dl.BaseServiceRunner):
                         p.alignment = paragraph.alignment
                         for run in paragraph.runs:
                             new_run = p.add_run()
-                            response = openai.ChatCompletion.create(
+                            response = openai.chat.completions.create(
                                 model="gpt-3.5-turbo",  # gpt-4
                                 messages=[
                                     {"role": "system",
@@ -139,8 +139,8 @@ class RemoveSensitiveText(dl.BaseServiceRunner):
                                      "content": run.text}
                                 ])
                             print(
-                                f"old text: {run.text}, @@@@ new text: {response['choices'][0]['message']['content']}")
-                            new_run.text = response['choices'][0]['message']['content']
+                                f"old text: {run.text}, @@@@ new text: {response.choices[0].message.content}")
+                            new_run.text = response.choices[0].message.content
                             self.copy_text_attributes(run, new_run)
 
         # Save the new presentation

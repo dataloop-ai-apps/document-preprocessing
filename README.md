@@ -29,6 +29,12 @@ The available pipeline nodes:
 * ```Text Preprocessing``` - This app serves as pipeline node. This app preprocess
   PDFs dataset to create clean text files. This files can be an input for nlp model or to be converted to prompt input.
 
+
+* ```PPT Sanitization``` - This app serves as pipeline node. This app takes a slide presentation and sanitizes it by 
+removing any visual identity or.
+
+
+
 *** In the future, similar applications will be available for different types of textual files such as: HTML, eml (
 email), jsons and so on.
 
