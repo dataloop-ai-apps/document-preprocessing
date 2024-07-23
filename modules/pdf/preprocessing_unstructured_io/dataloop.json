@@ -34,20 +34,6 @@
             "queueLength": 10
           }
         }
-      },
-      {
-        "name": "preprocess-text-v2",
-        "moduleName": "preprocess_text_v2",
-        "runtime": {
-          "podType": "regular-m",
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.1",
-          "concurrency": 10,
-          "autoscaler": {
-            "minReplicas": 0,
-            "maxReplicas": 2,
-            "queueLength": 10
-          }
-        }
       }
     ],
     "pipelineNodes": [
@@ -167,7 +153,7 @@
       {
         "invoke": {
           "type": "function",
-          "namespace": "preprocess-text-v2.preprocess_text_v2.preprocess_text"
+          "namespace": "pdf-to-text-v2.preprocess_text_v2.preprocess_text"
         },
         "name": "preprocess",
         "categories": [
@@ -239,7 +225,7 @@
       },
       {
         "name": "preprocess_text_v2",
-        "computeConfig": "preprocess-text-v2",
+        "computeConfig": "pdf-to-text-v2",
         "entryPoint": "modules/pdf/preprocessing_unstructured_io/preprocess_runner.py",
         "className": "PreprocessorRunner",
         "initInputs": [],
