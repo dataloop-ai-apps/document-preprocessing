@@ -1,0 +1,152 @@
+{
+  "displayName": "Sanitize PPT",
+  "name": "sanitize-ppt-app",
+  "scope": "project",
+  "version": "0.0.32",
+  "description": "An application for sanitizing PPT files from all sorts of visual identities",
+  "attributes": {
+    "Provider": "Dataloop",
+    "Category": "Pipeline",
+    "Pipeline Type": "Node",
+    "Node Type": "Other"
+  },
+  "components": {
+    "computeConfigs": [
+      {
+        "name": "ppt-sanitization-compute",
+        "runtime": {
+          "podType": "regular-m",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.2",
+          "concurrency": 10,
+          "autoscaler": {
+            "minReplicas": 0,
+            "maxReplicas": 2,
+            "queueLength": 10
+          }
+        }
+      }
+    ],
+    "pipelineNodes": [
+      {
+        "invoke": {
+          "type": "function",
+          "namespace": "sanitize-ppt-service.sanitize_ppt_module.sanitize_text"
+        },
+        "name": "sanitize-text-ppt",
+        "categories": [
+          "Text-Preprocessing"
+        ],
+        "displayName": "Sanitize PPT - NER",
+        "description": "Cleans Named Entity Recognitions from PPT items",
+        "scope": "node",
+        "configuration": {
+          "fields": [
+            {
+              "name": "name",
+              "title": "Node Name",
+              "props": {
+                "title": true,
+                "type": "string",
+                "default": "Sanitize PPT - NER",
+                "required": true,
+                "placeholder": "Insert node name"
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-input"
+            }
+          ]
+        }
+      },
+      {
+        "invoke": {
+          "type": "function",
+          "namespace": "sanitize-ppt-service.sanitize_ppt_module.sanitize_visual_identity"
+        },
+        "name": "sanitize-visual-identity-ppt",
+        "categories": [
+          "Text-Preprocessing"
+        ],
+        "displayName": "Sanitize PPT - Visual Identity",
+        "description": "Cleans visual identity from PPT items",
+        "scope": "node",
+        "configuration": {
+          "fields": [
+            {
+              "name": "name",
+              "title": "Node Name",
+              "props": {
+                "title": true,
+                "type": "string",
+                "default": "Sanitize PPT - Visual Identity",
+                "required": true,
+                "placeholder": "Insert node name"
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-input"
+            }
+          ]
+        }
+      }
+    ],
+    "modules": [
+      {
+        "name": "sanitize_ppt_module",
+        "computeConfig": "ppt-sanitization-compute",
+        "entryPoint": "modules/ppt/ppt_sanitization/ppt_sanitization.py",
+        "className": "ServiceRunner",
+        "initInputs": [
+          {
+            "type": "String",
+            "name": "open_ai_key"
+          }
+        ],
+        "functions": [
+          {
+            "name": "sanitize_text",
+            "input": [
+              {
+                "type": "Item",
+                "name": "item"
+              }
+            ],
+            "output": [
+              {
+                "type": "Item",
+                "name": "item"
+              }
+            ],
+            "displayIcon": "icon-dl-item-filled",
+            "displayName": "Sanitize PPT - NER"
+          },
+          {
+            "name": "sanitize_visual_identity",
+            "input": [
+              {
+                "type": "Item",
+                "name": "item"
+              }
+            ],
+            "output": [
+              {
+                "type": "Item",
+                "name": "item"
+              }
+            ],
+            "displayIcon": "icon-dl-item-filled",
+            "displayName": "Sanitize PPT - Visual Identity"
+          }
+        ]
+      }
+    ]
+  }
+}
