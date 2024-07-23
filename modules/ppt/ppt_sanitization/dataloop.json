@@ -10,24 +10,34 @@
     "Pipeline Type": "Node",
     "Node Type": "Other"
   },
-    "codebase": {
-    "type": "git",
-    "gitUrl": "https://github.com/dataloop-ai-apps/text-preprocessing.git",
-    "gitTag": "0.0.32"
-  },
   "components": {
+    "computeConfigs": [
+      {
+        "name": "ppt-sanitization-compute",
+        "runtime": {
+          "podType": "regular-m",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.2",
+          "concurrency": 10,
+          "autoscaler": {
+            "minReplicas": 0,
+            "maxReplicas": 2,
+            "queueLength": 10
+          }
+        }
+      }
+    ],
     "pipelineNodes": [
       {
         "invoke": {
           "type": "function",
-          "namespace": "sanitize-ppt-service.sanitize_ppt_module.strip_and_preserve_presentation"
+          "namespace": "sanitize-ppt-service.sanitize_ppt_module.sanitize_text"
         },
-        "name": "sanitize-ppt",
+        "name": "sanitize-text-ppt",
         "categories": [
           "Text-Preprocessing"
         ],
-        "displayName": "Sanitize PPT",
-        "description": "Converting PDF to Image items",
+        "displayName": "Sanitize PPT - NER",
+        "description": "Cleans Named Entity Recognitions from PPT items",
         "scope": "node",
         "configuration": {
           "fields": [
@@ -37,7 +47,42 @@
               "props": {
                 "title": true,
                 "type": "string",
-                "default": "Sanitize PPT",
+                "default": "Sanitize PPT - NER",
+                "required": true,
+                "placeholder": "Insert node name"
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-input"
+            }
+          ]
+        }
+      },
+      {
+        "invoke": {
+          "type": "function",
+          "namespace": "sanitize-ppt-service.sanitize_ppt_module.sanitize_visual_identity"
+        },
+        "name": "sanitize-visual-identity-ppt",
+        "categories": [
+          "Text-Preprocessing"
+        ],
+        "displayName": "Sanitize PPT - Visual Identity",
+        "description": "Cleans visual identity from PPT items",
+        "scope": "node",
+        "configuration": {
+          "fields": [
+            {
+              "name": "name",
+              "title": "Node Name",
+              "props": {
+                "title": true,
+                "type": "string",
+                "default": "Sanitize PPT - Visual Identity",
                 "required": true,
                 "placeholder": "Insert node name"
               },
@@ -56,6 +101,7 @@
     "modules": [
       {
         "name": "sanitize_ppt_module",
+        "computeConfig": "ppt-sanitization-compute",
         "entryPoint": "modules/ppt/ppt_sanitization/ppt_sanitization.py",
         "className": "ServiceRunner",
         "initInputs": [
@@ -66,7 +112,7 @@
         ],
         "functions": [
           {
-            "name": "strip_and_preserve_presentation",
+            "name": "sanitize_text",
             "input": [
               {
                 "type": "Item",
@@ -80,28 +126,26 @@
               }
             ],
             "displayIcon": "icon-dl-item-filled",
-            "displayName": "Sanitize PPT"
+            "displayName": "Sanitize PPT - NER"
+          },
+          {
+            "name": "sanitize_visual_identity",
+            "input": [
+              {
+                "type": "Item",
+                "name": "item"
+              }
+            ],
+            "output": [
+              {
+                "type": "Item",
+                "name": "item"
+              }
+            ],
+            "displayIcon": "icon-dl-item-filled",
+            "displayName": "Sanitize PPT - Visual Identity"
           }
         ]
-      }
-    ],
-    "services": [
-      {
-        "name": "sanitize-ppt-service",
-        "moduleName": "sanitize_ppt_module",
-        "secrets": [
-        ],
-        "runtime": {
-          "podType": "regular-m",
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.1",
-          "concurrency": 10,
-          "autoscaler": {
-            "minReplicas": 0,
-            "maxReplicas": 2,
-            "queueLength": 10
-          }
-        },
-        "operation": "none"
       }
     ]
   }
