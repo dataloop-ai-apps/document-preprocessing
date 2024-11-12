@@ -35,10 +35,12 @@ class ChunksExtractor(dl.BaseServiceRunner):
         # chunking_strategy = node.metadata['customNodeConfig']['chunking_strategy']
         # max_chunk_size = node.metadata['customNodeConfig']['max_chunk_size']
         # chunk_overlap = node.metadata['customNodeConfig']['chunk_overlap']
+        # chunk_overlap = node.metadata['customNodeConfig']['remote_path_for_chunks']
         # local test
         chunking_strategy = 'recursive'
         max_chunk_size = 300
         chunk_overlap = 20
+        remote_path_for_chunks = '/chunk_files'
 
         suffix = Path(item.name).suffix
         if suffix != '.txt':
@@ -64,6 +66,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
                                           chunks=chunks,
                                           item_local_path=item_local_path,
                                           item=item,
+                                          remote_path_for_chunks=remote_path_for_chunks,
                                           metadata={'system': {'document': item.name},
                                                     'user': {'extracted_chunk': True,
                                                              'original_item_id': item.id}}
@@ -72,7 +75,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
         return chunks_items
 
     @staticmethod
-    def upload_chunks(local_path, chunks, item_local_path, item, metadata):
+    def upload_chunks(local_path, chunks, item_local_path, item, remote_path_for_chunks, metadata):
         """
         Saves each text chunk as a separate file, uploads the files as Dataloop items, and removes local copies.
 
@@ -85,6 +88,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
             item_local_path (str): The local path of the original item, used to generate chunk file names.
             item (dl.Item): The original Dataloop item that the chunks are derived from.
             metadata (dict): Metadata to associate with each uploaded chunk item, including any relevant system tags.
+            remote_path_for_chunks (str): Remote path for the created chunks.
 
         Returns:
             List[dl.Item]: A list of uploaded Dataloop items, each representing a chunk of the original text file.
@@ -109,7 +113,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
 
         # Uploading all chunk items - bulk
         chunks_items = item.dataset.items.upload(local_path=chunks_paths,
-                                                 remote_path='/chunk_files',
+                                                 remote_path=remote_path_for_chunks,
                                                  item_metadata=metadata
                                                  )
 

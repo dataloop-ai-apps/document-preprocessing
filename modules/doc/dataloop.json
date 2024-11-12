@@ -68,6 +68,23 @@
                 }
               ],
               "widget": "dl-input"
+            },
+            {
+              "name": "remote_path_for_extractions",
+              "title": "remote path for extractions",
+              "props": {
+                "type": "string",
+                "default": "/extracted_from_docs",
+                "title": true,
+                "required": true
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-slider"
             }
           ]
         }

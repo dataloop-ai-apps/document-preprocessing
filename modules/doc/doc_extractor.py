@@ -25,8 +25,10 @@ class DocExtractor(dl.BaseServiceRunner):
         """
         # node = context.node
         # extract_tables = node.metadata['customNodeConfig']['extract_tables']
+        # remote_path_for_extractions = node.metadata['customNodeConfig']['remote_path_for_extractions']
         # Local test
         extract_tables = False
+        remote_path_for_extractions = '/extracted_from_docs'
 
         suffix = Path(item.name).suffix.lower()
         if suffix not in {'.doc', '.docx'}:
@@ -44,7 +46,7 @@ class DocExtractor(dl.BaseServiceRunner):
             document.LoadFromFile(item_local_path)
             document.SaveToFile(docx_path, FileFormat.Docx2016)
             document.Close()
-            if not os.path.isfile(docx_path):
+            if not os.path.isfile(docx_path):  # TODO  to check ? exception
                 raise f"Didn't manage to convert {item.id} to docx format!"
         else:
             docx_path = item_local_path
@@ -52,7 +54,7 @@ class DocExtractor(dl.BaseServiceRunner):
         output_path = self.extract_content(docx_path=docx_path, local_path=local_path, extract_tables=extract_tables)
 
         new_item = item.dataset.items.upload(local_path=output_path,
-                                             remote_path='/extracted_from_docs',
+                                             remote_path='/extracted_from_docs',  # TODO FROM THE USER
                                              item_metadata={
                                                  'user': {'extracted_from_docs': True,
                                                           'original_item_id': item.id}})
@@ -85,6 +87,7 @@ class DocExtractor(dl.BaseServiceRunner):
         for para in doc.paragraphs:
             full_text.append(para.text)
 
+        # TODO go by order ? of the file
         if extract_tables is True:
             for table in doc.tables:
                 for row in table.rows:

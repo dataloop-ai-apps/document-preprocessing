@@ -13,13 +13,19 @@ logger = logging.getLogger('pdf-to-text-logger')
 
 class PdfExtractor(dl.BaseServiceRunner):
 
-    def pdf_extraction(self, item: dl.Item) -> List[dl.Item]:
+    def pdf_extraction(self, item: dl.Item, context: dl.Context) -> List[dl.Item]:
         """
         The extracting text from pdf item and uploading it as a text file.
 
         :param item: Dataloop item, pdf file
         :return: Text Dataloop item
         """
+        # node = context.node
+        # extract_tables = node.metadata['customNodeConfig']['extract_images']
+        # remote_path_for_extractions = node.metadata['customNodeConfig']['remote_path_for_extractions']
+        # Local test
+        extract_images = False
+        remote_path_for_extractions = '/extracted_from_pdfs'
 
         suffix = Path(item.name).suffix
         if not suffix == '.pdf':
@@ -30,12 +36,13 @@ class PdfExtractor(dl.BaseServiceRunner):
         os.makedirs(local_path, exist_ok=True)
         item_local_path = item.download(local_path=local_path)
 
-        txt_path = self.extract_text_from_pdf(pdf_path=item_local_path)
-        new_items_path = self.extract_images_from_pdf(pdf_path=item_local_path)
+        new_items_path = self.extract_text_from_pdf(pdf_path=item_local_path)
+        if extract_images is True:
+            new_images_path = self.extract_images_from_pdf(pdf_path=item_local_path)
+            new_items_path.extend(new_images_path)
 
-        new_items_path.extend(txt_path)
         new_items = item.dataset.items.upload(local_path=new_items_path,
-                                              remote_path='/extracted_from_pdfs',
+                                              remote_path=remote_path_for_extractions,
                                               item_metadata={
                                                   'user': {'extracted_from_pdf': True,
                                                            'original_item_id': item.id}})

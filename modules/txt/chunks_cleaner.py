@@ -36,9 +36,9 @@ class ChunksCleaner(dl.BaseServiceRunner):
         """
 
         # node = context.node
-        # to_spell = node.metadata['customNodeConfig']['to_spell']
+        # to_correct_spelling = node.metadata['customNodeConfig']['to_correct_spelling']
         # local test
-        to_spell = False
+        to_correct_spelling = False
 
         # Download path - original items
         local_path = os.path.join(os.getcwd(), 'datasets', items[0].dataset.id, 'items')
@@ -61,7 +61,7 @@ class ChunksCleaner(dl.BaseServiceRunner):
                               'item': item,
                               'local_path': local_path,
                               'chunk_files_folder': chunk_files_folder,
-                              'to_spell': to_spell
+                              'to_correct_spelling': to_correct_spelling
                               }
                     future = executor.submit(self.clean_chunk, **kwargs)
                     futures.append(future)
@@ -73,7 +73,7 @@ class ChunksCleaner(dl.BaseServiceRunner):
 
     @staticmethod
     def clean_chunk(pbar: tqdm, item: dl.Item, local_path: str, chunk_files_folder: str,
-                    to_spell: bool = True) -> dl.Item:
+                    to_correct_spelling: bool = True) -> dl.Item:
         """
         Cleans a text chunk item using various text preprocessing functions and optionally applies spell-checking.
 
@@ -86,7 +86,7 @@ class ChunksCleaner(dl.BaseServiceRunner):
             item (dl.Item): The Dataloop text item representing a chunk of the original file.
             local_path (str): Local path where the item is downloaded.
             chunk_files_folder (str): Path for saving the locally cleaned chunk file.
-            to_spell (bool, optional): Whether to apply spell-checking using autocorrect. Defaults to True.
+            to_correct_spelling (bool, optional): Whether to apply spell-checking using autocorrect. Defaults to True.
 
         Returns:
             dl.Item: The cleaned text chunk item uploaded back to the Dataloop dataset.
@@ -123,7 +123,7 @@ class ChunksCleaner(dl.BaseServiceRunner):
             element = Text(element.text)
             element.apply(*cleaners)
             logger.info("Applied cleaning methods")
-            if to_spell is True:
+            if to_correct_spelling is True:
                 spell = Speller(lang='en')
                 clean_text = spell(element.text)
                 text += clean_text + ''
@@ -149,7 +149,7 @@ class ChunksCleaner(dl.BaseServiceRunner):
                                                                                        'original_chunk_id': item.id}}})
         pbar.update()
 
-        # Remove local files
+        # Remove local files # TODO REMOVE SHUTIL REMOVE
         os.remove(textfile_path)
         os.remove(chunkfile_path)
 

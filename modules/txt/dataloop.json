@@ -146,6 +146,23 @@
                 }
               ],
               "widget": "dl-slider"
+            },
+            {
+              "name": "remote_path_for_chunks",
+              "title": "remote path for chunks",
+              "props": {
+                "type": "string",
+                "default": "/chunk_files",
+                "title": true,
+                "required": true
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-slider"
             }
           ]
         }
@@ -183,8 +200,8 @@
               "widget": "dl-input"
             },
             {
-              "name": "to_spell",
-              "title": "to spell",
+              "name": "to_correct_spelling",
+              "title": "to correct spelling",
               "props": {
                 "type": "boolean",
                 "title": true,
