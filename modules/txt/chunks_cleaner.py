@@ -18,29 +18,30 @@ nltk.download('punkt')
 logger = logging.getLogger('text-preprocess-logger')
 
 
-class PreprocessorRunner(dl.BaseServiceRunner):
-    """
-    This Service contains preprocessing functions for chunk text files to clean text files.
-    The service allow preprocessing the text files to create a clean dataset and prepare the data for using
-    embedding models.
-    """
+class ChunksCleaner(dl.BaseServiceRunner):
 
-    @staticmethod
-    def preprocess_text(items: [dl.Item], context: dl.Context) -> List[dl.Item]:
+    def clean_multiple_chunks(self, items: [dl.Item], context: dl.Context) -> List[dl.Item]:
         """
-        The main function for the preprocessing process of a Dataloop item, text file contain a chunk of the original
-        text file (pdf in this case).
-        :param items: a list of Dataloop items, text file
-        :param context: Dataloop context to set whether to spell the text using autocorrect
-        :return: A list of clean chunk items.
+        Preprocesses multiple text chunk items in a Dataloop dataset by cleaning and optionally spell-checking each chunk.
+
+        This function downloads each text item in the provided list, processes the text based on the context settings,
+        and saves the cleaned text to new chunk files. Optionally, it performs spell correction if enabled in the context.
+
+        Args:
+            items (List[dl.Item]): A list of Dataloop text items, each representing a chunk of the original text.
+            context (dl.Context): Context configuration specifying whether to apply spell-checking.
+
+        Returns:
+            List[dl.Item]: A list of cleaned text chunk items.
         """
-        node = context.node
-        to_spell = node.metadata['customNodeConfig']['to_spell']
+
+        # node = context.node
+        # to_spell = node.metadata['customNodeConfig']['to_spell']
         # local test
-        # to_spell = False
+        to_spell = False
 
         # Download path - original items
-        local_path = os.path.join(os.getcwd(), 'datasets', items[0].dataset.id, 'text_files')
+        local_path = os.path.join(os.getcwd(), 'datasets', items[0].dataset.id, 'items')
         os.makedirs(local_path, exist_ok=True)
 
         # Saving path - converted text items
@@ -62,7 +63,7 @@ class PreprocessorRunner(dl.BaseServiceRunner):
                               'chunk_files_folder': chunk_files_folder,
                               'to_spell': to_spell
                               }
-                    future = executor.submit(PreprocessorRunner.clean_chunk, **kwargs)
+                    future = executor.submit(self.clean_chunk, **kwargs)
                     futures.append(future)
         results = [future.result() for future in futures]
 
@@ -74,13 +75,21 @@ class PreprocessorRunner(dl.BaseServiceRunner):
     def clean_chunk(pbar: tqdm, item: dl.Item, local_path: str, chunk_files_folder: str,
                     to_spell: bool = True) -> dl.Item:
         """
-        Clean chunk using all undistracted io cleaning functions.
-        :param pbar: Progress bar.
-        :param item: Dataloop item, text file.
-        :param local_path: Path to item locally.
-        :param chunk_files_folder: Path for saving locally the clean chunk file.
-        :param to_spell: Whether to spell the text using autocorrect.
-        :return: Clean chunk item
+        Cleans a text chunk item using various text preprocessing functions and optionally applies spell-checking.
+
+        This function downloads the text item, applies a series of cleaning functions, optionally performs spell
+        correction, and saves the cleaned text as a new chunk file. It then uploads the cleaned chunk back to the
+        Dataloop dataset with metadata indicating the processing status.
+
+        Args:
+            pbar (tqdm): Progress bar instance to track progress.
+            item (dl.Item): The Dataloop text item representing a chunk of the original file.
+            local_path (str): Local path where the item is downloaded.
+            chunk_files_folder (str): Path for saving the locally cleaned chunk file.
+            to_spell (bool, optional): Whether to apply spell-checking using autocorrect. Defaults to True.
+
+        Returns:
+            dl.Item: The cleaned text chunk item uploaded back to the Dataloop dataset.
         """
         # Create a partial function for cleaner1 with the specified parameters for clean function of unstructured-io
         cleaner1_partial = partial(clean,
@@ -133,8 +142,7 @@ class PreprocessorRunner(dl.BaseServiceRunner):
 
         original_id = item.metadata.get('user', dict()).get('original_item_id', None)
         clean_chunk_item = item.dataset.items.upload(local_path=chunkfile_path,
-                                                     remote_path='/unstructured_io_text_files',
-                                                     # TODO: add another cleaning library
+                                                     remote_path='/clean_chunks_files',
                                                      item_metadata={
                                                          'user': {'prepossess_chunk': {'clean_chunk': True,
                                                                                        'original_item_id': original_id,
@@ -146,3 +154,12 @@ class PreprocessorRunner(dl.BaseServiceRunner):
         os.remove(chunkfile_path)
 
         return clean_chunk_item
+
+
+if __name__ == '__main__':
+    dl.setenv('prod')
+    # dataset = dl.datasets.get(dataset_id="67331a4e6df6bd7ec227a877")
+    filters = dl.Filters(field='metadata.user.extracted_chunk', values=True)
+    items = dl.datasets.get(dataset_id="67331a4e6df6bd7ec227a877").items.list(filters=filters).items
+    s = ChunksCleaner()
+    s.clean_multiple_chunks(items=items, context=dl.Context())

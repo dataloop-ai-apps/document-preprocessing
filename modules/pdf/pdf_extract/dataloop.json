@@ -1,0 +1,105 @@
+{
+  "displayName": "PDF to TXT",
+  "name": "pdf_to_txt",
+  "scope": "public",
+  "version": "0.0.37",
+  "description": "An application for converting PDF to TXT items",
+  "attributes": {
+    "Category": "Application",
+    "Provider": "Dataloop",
+    "Deployed By": "Dataloop",
+    "Application Type": [
+      "Pipeline Node"
+    ],
+    "Media Type": [
+      "Text"
+    ]
+  },
+  "codebase": {
+    "type": "git",
+    "gitUrl": "https://github.com/dataloop-ai-apps/document-preprocessing.git",
+    "gitTag": "0.0.37"
+  },
+  "components": {
+    "computeConfigs": [
+      {
+        "name": "pdf-to-txt-v2",
+        "runtime": {
+          "podType": "regular-m",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.1",
+          "concurrency": 10,
+          "autoscaler": {
+            "minReplicas": 0,
+            "maxReplicas": 2,
+            "queueLength": 10
+          }
+        }
+      }
+    ],
+    "pipelineNodes": [
+      {
+        "invoke": {
+          "type": "function",
+          "namespace": "pdf-to-txt-v2.pdf_to_txt_v2.pdf_extraction"
+        },
+        "name": "pdf_to_txt",
+        "categories": [
+          "Text-Preprocessing"
+        ],
+        "displayName": "PDF to TXT",
+        "description": "Converting PDF to Txt items",
+        "scope": "node",
+        "configuration": {
+          "fields": [
+            {
+              "name": "name",
+              "title": "Node Name",
+              "props": {
+                "title": true,
+                "type": "string",
+                "default": "PDF-to-Txt",
+                "required": true,
+                "placeholder": "Insert node name"
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-input"
+            }
+          ]
+        }
+      }
+    ],
+    "modules": [
+      {
+        "name": "pdf_to_txt_v2",
+        "computeConfig": "pdf-to-txt-v2",
+        "entryPoint": "modules/pdf/pdf_extract/pdf_extractor.py",
+        "className": "ConvertorRunner",
+        "initInputs": [],
+        "functions": [
+          {
+            "name": "PdfExtractor",
+            "input": [
+              {
+                "type": "Item",
+                "name": "item"
+              }
+            ],
+            "output": [
+              {
+                "type": "Item[]",
+                "name": "items"
+              }
+            ],
+            "displayIcon": "icon-dl-overview",
+            "displayName": "PDF to txt"
+          }
+        ]
+      }
+    ]
+  }
+}

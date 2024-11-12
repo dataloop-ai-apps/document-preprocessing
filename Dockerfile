@@ -11,7 +11,8 @@ RUN pip install -U \
     python-pptx==0.6.23\
     openai==1.30.3\
     opencv-python==4.8.1.78\
-    "unstructured[all-docs]==0.12.0"
+    "unstructured[all-docs]==0.12.0"\
+    pypandoc==1.14
 
 
 # docker build --no-cache -t gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.2 -f Dockerfile .

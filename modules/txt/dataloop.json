@@ -1,9 +1,9 @@
 {
-  "displayName": "PDF to Preprocessed Text",
-  "name": "pdf_to_text",
+  "displayName": "TXT Chunking",
+  "name": "txt_to_chunks",
   "scope": "public",
   "version": "0.0.37",
-  "description": "An application for converting PDF to preprocessed Text items",
+  "description": "This app provide processes of large text files by splitting them into smaller, manageable chunks based on specified parameters (size, overlap, and strategy) and uploads each chunk as a separate item in Dataloop, enabling easier handling and analysis of large documents.",
   "attributes": {
     "Category": "Application",
     "Provider": "Dataloop",
@@ -23,7 +23,7 @@
   "components": {
     "computeConfigs": [
       {
-        "name": "pdf-to-text-v2",
+        "name": "txt-to-chunks-v2",
         "runtime": {
           "podType": "regular-m",
           "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.1",
@@ -40,14 +40,14 @@
       {
         "invoke": {
           "type": "function",
-          "namespace": "pdf-to-text-v2.pdf_to_text_v2.pdf_item_to_text"
+          "namespace": "txt-to-chunks-v2.txt_to_chunks_v2.create_chunks"
         },
-        "name": "pdf_to_text",
+        "name": "create_chunks",
         "categories": [
           "Text-Preprocessing"
         ],
-        "displayName": "PDF to Text",
-        "description": "Converting PDF to Text items",
+        "displayName": "TXT to Chunks",
+        "description": "Extracting Chunks from TXT.",
         "scope": "node",
         "configuration": {
           "fields": [
@@ -57,7 +57,7 @@
               "props": {
                 "title": true,
                 "type": "string",
-                "default": "PDF-to-Text",
+                "default": "TXT-to-Chunks",
                 "required": true,
                 "placeholder": "Insert node name"
               },
@@ -153,7 +153,7 @@
       {
         "invoke": {
           "type": "function",
-          "namespace": "pdf-to-text-v2.preprocess_text_v2.preprocess_text"
+          "namespace": "txt-to-chunks-v2.clean_chunks_v2.clean_multiple_chunks"
         },
         "name": "preprocess",
         "categories": [
@@ -198,14 +198,14 @@
     ],
     "modules": [
       {
-        "name": "pdf_to_text_v2",
-        "computeConfig": "pdf-to-text-v2",
-        "entryPoint": "modules/pdf/preprocessing_unstructured_io/converter_runner.py",
-        "className": "ConvertorRunner",
+        "name": "txt_to_chunks_v2",
+        "computeConfig": "txt-to-chunks-v2",
+        "entryPoint": "modules/txt/chunks_extractor.py",
+        "className": "ChunksExtractor",
         "initInputs": [],
         "functions": [
           {
-            "name": "pdf_item_to_text",
+            "name": "create_chunks",
             "input": [
               {
                 "type": "Item",
@@ -219,19 +219,19 @@
               }
             ],
             "displayIcon": "icon-dl-langchain",
-            "displayName": "PDF item to texts"
+            "displayName": "TXT to Chunks"
           }
         ]
       },
       {
-        "name": "preprocess_text_v2",
-        "computeConfig": "pdf-to-text-v2",
-        "entryPoint": "modules/pdf/preprocessing_unstructured_io/preprocess_runner.py",
-        "className": "PreprocessorRunner",
+        "name": "clean_chunks_v2",
+        "computeConfig": "txt-to-chunks-v2",
+        "entryPoint": "modules/txt/chunks_cleaner.py",
+        "className": "ChunksCleaner",
         "initInputs": [],
         "functions": [
           {
-            "name": "preprocess_text",
+            "name": "clean_multiple_chunks",
             "input": [
               {
                 "type": "Item[]",
@@ -245,7 +245,7 @@
               }
             ],
             "displayIcon": "icon-dl-unstucturedio",
-            "displayName": "Text item to clean text"
+            "displayName": "Cleaning Chunks"
           }
         ]
       }
