@@ -26,9 +26,8 @@ class PdfExtractor(dl.BaseServiceRunner):
         # extract_images = False
         # remote_path_for_extractions = '/extracted_from_pdfs'
 
-        suffix = Path(item.name).suffix
-        if not suffix == '.pdf':
-            raise dl.PlatformException(f"Item id : {item.id} is not a PDF file! This functions excepts pdf only")
+        if not item.mimetype == 'application/pdf':
+            raise ValueError(f"Item id : {item.id} is not a PDF file! This functions excepts pdf only")
 
         # Download item
         local_path = os.path.join(os.getcwd(), 'datasets', item.dataset.id, 'items', os.path.dirname(item.filename[1:]))
@@ -130,12 +129,3 @@ class PdfExtractor(dl.BaseServiceRunner):
                     logger.info(f"Image saved as {image_name}")
 
         return images_paths
-
-
-if __name__ == '__main__':
-    import dtlpy as dl
-
-    dl.setenv('prod')
-    item = dl.items.get(item_id="")
-    s = PdfExtractor()
-    s.pdf_extraction(item=item, context=dl.Context())

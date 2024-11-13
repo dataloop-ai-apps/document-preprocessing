@@ -11,6 +11,7 @@ logger = logging.getLogger('text-preprocess-logger')
 nltk.download('averaged_perceptron_tagger')
 nltk.download('punkt')
 
+
 class ChunksExtractor(dl.BaseServiceRunner):
 
     def create_chunks(self, item: dl.Item, context: dl.Context) -> List[dl.Item]:
@@ -42,9 +43,8 @@ class ChunksExtractor(dl.BaseServiceRunner):
         # chunk_overlap = 20
         # remote_path_for_chunks = '/chunk_files'
 
-        suffix = Path(item.name).suffix
-        if suffix != '.txt':
-            raise dl.PlatformException(
+        if not item.mimetype == 'text/plain':
+            raise ValueError(
                 f"Item id : {item.id} is not txt file. This functions excepts txt only. "
                 f"Use other extracting applications from Marketplace to convert text format to txt")
 
@@ -194,10 +194,3 @@ class ChunksExtractor(dl.BaseServiceRunner):
             chunks = [text]
 
         return chunks
-
-
-if __name__ == '__main__':
-    dl.setenv('prod')
-    item = dl.items.get(item_id="")
-    s = ChunksExtractor()
-    s.create_chunks(item=item, context=dl.Context())

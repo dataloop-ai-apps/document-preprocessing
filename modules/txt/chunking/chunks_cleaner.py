@@ -150,11 +150,3 @@ class ChunksCleaner(dl.BaseServiceRunner):
         pbar.update()
 
         return clean_chunk_item
-
-
-if __name__ == '__main__':
-    dl.setenv('prod')
-    filters = dl.Filters(field='metadata.user.extracted_chunk', values=True)
-    items = dl.datasets.get(dataset_id="").items.list(filters=filters).items
-    s = ChunksCleaner()
-    s.clean_multiple_chunks(items=items, context=dl.Context())

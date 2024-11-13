@@ -107,10 +107,3 @@ class DocExtractor(dl.BaseServiceRunner):
         logger.info(f"Text saved to pages: {output_path}")
 
         return output_path
-
-
-if __name__ == '__main__':
-    dl.setenv('prod')
-    item = dl.items.get(item_id="")
-    s = DocExtractor()
-    s.doc_extraction(item=item, context=dl.Context())
