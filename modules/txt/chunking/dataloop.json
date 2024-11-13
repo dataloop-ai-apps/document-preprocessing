@@ -217,7 +217,7 @@
       {
         "name": "txt_to_chunks_v2",
         "computeConfig": "txt-to-chunks-v2",
-        "entryPoint": "modules/txt/chunks_extractor.py",
+        "entryPoint": "modules/txt/chunking/chunks_extractor.py",
         "className": "ChunksExtractor",
         "initInputs": [],
         "functions": [

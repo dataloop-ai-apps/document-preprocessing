@@ -36,7 +36,7 @@ class DocExtractor(dl.BaseServiceRunner):
             raise ValueError("Only .doc and .docx files are supported for extraction.")
 
         # Download path - original items
-        local_path = os.path.join(os.getcwd(), 'datasets', item.dataset.id, 'items',
+        local_path = os.path.join(os.getcwd(), '../datasets', item.dataset.id, 'items',
                                   os.path.dirname(item.filename[1:]))
         os.makedirs(local_path, exist_ok=True)
         item_local_path = item.download(local_path=local_path, save_locally=True)
