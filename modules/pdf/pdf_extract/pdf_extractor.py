@@ -4,11 +4,9 @@ import dtlpy as dl
 import logging
 import shutil
 import pypdf
-import nltk
 import fitz
 import os
 
-nltk.download('punkt')
 logger = logging.getLogger('pdf-to-text-logger')
 
 

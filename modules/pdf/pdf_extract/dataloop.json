@@ -48,7 +48,7 @@
         ],
         "displayName": "PDF to TXT",
         "description": "Converting PDF to Txt items",
-        "scope": "node",
+        "scope": "project",
         "configuration": {
           "fields": [
             {

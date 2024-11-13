@@ -1,9 +1,9 @@
 {
-  "displayName": "DOC to TXT",
+  "displayName": "Word to Txt",
   "name": "doc_to_txt",
   "scope": "public",
   "version": "0.0.37",
-  "description": "An application for converting DOC to TXT items",
+  "description": "An application for converting Word to Txt items",
   "attributes": {
     "Category": "Application",
     "Provider": "Dataloop",
@@ -25,7 +25,7 @@
       {
         "name": "doc-to-txt-v2",
         "runtime": {
-          "podType": "regular-m",
+          "podType": "regular-s",
           "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/document-preprocessing:0.1.2",
           "concurrency": 10,
           "autoscaler": {
@@ -46,9 +46,9 @@
         "categories": [
           "Text-Preprocessing"
         ],
-        "displayName": "DOC to TXT",
-        "description": "Converting DOC to Txt items",
-        "scope": "node",
+        "displayName": "Word to Txt",
+        "description": "Converting Word to Txt items",
+        "scope": "project",
         "configuration": {
           "fields": [
             {
@@ -113,7 +113,7 @@
               }
             ],
             "displayIcon": "icon-dl-overview",
-            "displayName": "DOC to txt"
+            "displayName": "Word to Txt"
           }
         ]
       }

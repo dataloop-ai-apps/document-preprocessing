@@ -1,5 +1,5 @@
 {
-  "displayName": "TXT Chunking",
+  "displayName": "Text Chunk Generator",
   "name": "txt_to_chunks",
   "scope": "public",
   "version": "0.0.37",
@@ -25,7 +25,7 @@
       {
         "name": "txt-to-chunks-v2",
         "runtime": {
-          "podType": "regular-m",
+          "podType": "regular-s",
           "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/document-preprocessing:0.1.2",
           "concurrency": 10,
           "autoscaler": {
@@ -46,9 +46,9 @@
         "categories": [
           "Text-Preprocessing"
         ],
-        "displayName": "TXT to Chunks",
-        "description": "Extracting Chunks from TXT.",
-        "scope": "node",
+        "displayName": "Text to Chunks",
+        "description": "Extracting Chunks from text files.",
+        "scope": "project",
         "configuration": {
           "fields": [
             {
@@ -57,7 +57,7 @@
               "props": {
                 "title": true,
                 "type": "string",
-                "default": "TXT-to-Chunks",
+                "default": "Text-to-Chunks",
                 "required": true,
                 "placeholder": "Insert node name"
               },
@@ -176,9 +176,9 @@
         "categories": [
           "Text-Preprocessing"
         ],
-        "displayName": "Text Preprocessing",
-        "description": "Preprocess text items",
-        "scope": "node",
+        "displayName": "Clean Text",
+        "description": "Clean text using Unstructured io.",
+        "scope": "project",
         "configuration": {
           "fields": [
             {
@@ -187,7 +187,7 @@
               "props": {
                 "title": true,
                 "type": "string",
-                "default": "Preprocess-Text",
+                "default": "Clean-Text",
                 "required": true,
                 "placeholder": "Insert node name"
               },

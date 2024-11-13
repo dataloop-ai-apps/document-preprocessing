@@ -48,7 +48,7 @@
         ],
         "displayName": "PDF to Image",
         "description": "Converting PDF to Image items",
-        "scope": "node",
+        "scope": "project",
         "configuration": {
           "fields": [
             {

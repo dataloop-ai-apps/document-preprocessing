@@ -11,11 +11,8 @@ import dtlpy as dl
 import logging
 import shutil
 import time
-import nltk
 import os
 
-nltk.download('averaged_perceptron_tagger')
-nltk.download('punkt')
 logger = logging.getLogger('text-preprocess-logger')
 
 

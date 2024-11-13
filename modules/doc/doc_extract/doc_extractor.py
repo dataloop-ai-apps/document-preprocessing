@@ -4,10 +4,8 @@ from pathlib import Path
 import dtlpy as dl
 import logging
 import shutil
-import nltk
 import os
 
-nltk.download('punkt')
 logger = logging.getLogger('pdf-to-text-logger')
 
 
