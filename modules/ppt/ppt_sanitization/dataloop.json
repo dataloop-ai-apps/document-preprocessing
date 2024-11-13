@@ -2,13 +2,18 @@
   "displayName": "Sanitize PPT",
   "name": "sanitize-ppt-app",
   "scope": "project",
-  "version": "0.0.32",
+  "version": "0.0.37",
   "description": "An application for sanitizing PPT files from all sorts of visual identities",
   "attributes": {
     "Provider": "Dataloop",
     "Category": "Pipeline",
     "Pipeline Type": "Node",
     "Node Type": "Other"
+  },
+  "codebase": {
+    "type": "git",
+    "gitUrl": "https://github.com/dataloop-ai-apps/document-preprocessing.git",
+    "gitTag": "0.0.37"
   },
   "components": {
     "computeConfigs": [

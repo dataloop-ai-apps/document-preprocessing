@@ -95,11 +95,11 @@
         "name": "doc_to_txt_v2",
         "computeConfig": "doc-to-txt-v2",
         "entryPoint": "modules/doc/doc_extract/doc_extractor.py",
-        "className": "ConvertorRunner",
+        "className": "DocExtractor",
         "initInputs": [],
         "functions": [
           {
-            "name": "DocExtractor",
+            "name": "doc_extraction",
             "input": [
               {
                 "type": "Item",

@@ -1,9 +1,9 @@
 {
-  "displayName": "PDF to TXT",
+  "displayName": "PDF to Txt",
   "name": "pdf_to_txt",
   "scope": "public",
   "version": "0.0.37",
-  "description": "An application for converting PDF to TXT items",
+  "description": "An application for converting PDF to Txt items",
   "attributes": {
     "Category": "Application",
     "Provider": "Dataloop",
@@ -46,7 +46,7 @@
         "categories": [
           "Text-Preprocessing"
         ],
-        "displayName": "PDF to TXT",
+        "displayName": "PDF to Txt",
         "description": "Converting PDF to Txt items",
         "scope": "project",
         "configuration": {
@@ -95,11 +95,11 @@
         "name": "pdf_to_txt_v2",
         "computeConfig": "pdf-to-txt-v2",
         "entryPoint": "modules/pdf/pdf_extract/pdf_extractor.py",
-        "className": "ConvertorRunner",
+        "className": "PdfExtractor",
         "initInputs": [],
         "functions": [
           {
-            "name": "PdfExtractor",
+            "name": "pdf_extraction",
             "input": [
               {
                 "type": "Item",
@@ -113,7 +113,7 @@
               }
             ],
             "displayIcon": "icon-dl-overview",
-            "displayName": "PDF to txt"
+            "displayName": "PDF to Txt"
           }
         ]
       }
