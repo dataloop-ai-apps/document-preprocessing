@@ -84,7 +84,7 @@
                   "effect": "error"
                 }
               ],
-              "widget": "dl-slider"
+              "widget": "dl-input"
             }
           ]
         }

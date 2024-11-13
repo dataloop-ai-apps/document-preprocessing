@@ -25,7 +25,7 @@
       {
         "name": "pdf-to-txt-v2",
         "runtime": {
-          "podType": "regular-m",
+          "podType": "regular-s",
           "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/document-preprocessing:0.1.2",
           "concurrency": 10,
           "autoscaler": {
@@ -84,7 +84,7 @@
                   "effect": "error"
                 }
               ],
-              "widget": "dl-slider"
+              "widget": "dl-input"
             }
           ]
         }

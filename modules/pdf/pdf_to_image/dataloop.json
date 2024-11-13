@@ -25,7 +25,7 @@
       {
         "name": "pdf-to-image-v2",
         "runtime": {
-          "podType": "regular-m",
+          "podType": "regular-s",
           "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.1",
           "concurrency": 10,
           "autoscaler": {
