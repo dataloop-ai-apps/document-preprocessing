@@ -85,6 +85,16 @@
                 }
               ],
               "widget": "dl-input"
+            },
+            {
+              "name": "extract_images",
+              "title": "extract images",
+              "props": {
+                "type": "boolean",
+                "title": true,
+                "default": false
+              },
+              "widget": "dl-checkbox"
             }
           ]
         }

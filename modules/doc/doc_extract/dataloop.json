@@ -85,6 +85,16 @@
                 }
               ],
               "widget": "dl-input"
+            },
+            {
+              "name": "extract_tables",
+              "title": "extract tables",
+              "props": {
+                "type": "boolean",
+                "title": true,
+                "default": false
+              },
+              "widget": "dl-checkbox"
             }
           ]
         }
