@@ -1,12 +1,12 @@
 # Documents Preprocessing Applications
 
-This repository provides utilities and applications for preprocessing document files, including content extraction, text
-chunking, and table handling. It is designed to facilitate the management and processing of textual data, especially
-from `.docx` files, for use in downstream applications.
+This repository provides Dataloop applications for preprocessing document files, including content extraction and text
+chunking. It is designed to facilitate the management and processing of textual data for use in downstream applications.
+
 
 ## Features
 
-- **Content Extraction**: Extracts text from file, by the specific format.
+- **Content Extraction**: Extracts text from file, by its format.
 - **Text Chunking**: Splits extracted text into smaller chunks with customizable settings.
 
 ## Modules
@@ -20,3 +20,5 @@ For more detailed information about each module, refer to the individual README 
 - [TXT Chunking Module](modules/txt/chunking/README.md)
 
 
+# Installations
+All apps can be found in `Marketplace` under `Applications` tab:
