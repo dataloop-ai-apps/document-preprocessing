@@ -172,12 +172,12 @@
           "type": "function",
           "namespace": "txt-to-chunks-v2.clean_chunks_v2.clean_multiple_chunks"
         },
-        "name": "preprocess",
+        "name": "clean_multiple_chunks",
         "categories": [
           "Text-Preprocessing"
         ],
-        "displayName": "Clean Text",
-        "description": "Clean text using Unstructured io.",
+        "displayName": "Clean Chunks",
+        "description": "Clean Chunks using Unstructured io.",
         "scope": "project",
         "configuration": {
           "fields": [
@@ -187,7 +187,7 @@
               "props": {
                 "title": true,
                 "type": "string",
-                "default": "Clean-Text",
+                "default": "Clean-Chunks",
                 "required": true,
                 "placeholder": "Insert node name"
               },
@@ -236,14 +236,14 @@
               }
             ],
             "displayIcon": "icon-dl-langchain",
-            "displayName": "TXT to Chunks"
+            "displayName": "Text to Chunks"
           }
         ]
       },
       {
         "name": "clean_chunks_v2",
         "computeConfig": "txt-to-chunks-v2",
-        "entryPoint": "modules/txt/chunks_cleaner.py",
+        "entryPoint": "modules/txt/chunking/chunks_cleaner.py",
         "className": "ChunksCleaner",
         "initInputs": [],
         "functions": [
