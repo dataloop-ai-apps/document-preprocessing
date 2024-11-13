@@ -26,7 +26,7 @@
         "name": "doc-to-txt-v2",
         "runtime": {
           "podType": "regular-m",
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.1",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/document-preprocessing:0.1.2",
           "concurrency": 10,
           "autoscaler": {
             "minReplicas": 0,

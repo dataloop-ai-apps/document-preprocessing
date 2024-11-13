@@ -3,6 +3,7 @@ from docx import Document as DocxDocument
 from pathlib import Path
 import dtlpy as dl
 import logging
+import shutil
 import nltk
 import os
 
@@ -23,12 +24,12 @@ class DocExtractor(dl.BaseServiceRunner):
         Returns:
             dl.Item: New text item containing the extracted content in TXT format.
         """
-        # node = context.node
-        # extract_tables = node.metadata['customNodeConfig']['extract_tables']
-        # remote_path_for_extractions = node.metadata['customNodeConfig']['remote_path_for_extractions']
+        node = context.node
+        extract_tables = node.metadata['customNodeConfig']['extract_tables']
+        remote_path_for_extractions = node.metadata['customNodeConfig']['remote_path_for_extractions']
         # Local test
-        extract_tables = False
-        remote_path_for_extractions = '/extracted_from_docs'
+        # extract_tables = False
+        # remote_path_for_extractions = '/extracted_from_docs'
 
         suffix = Path(item.name).suffix.lower()
         if suffix not in {'.doc', '.docx'}:
@@ -42,19 +43,22 @@ class DocExtractor(dl.BaseServiceRunner):
         # Convert .doc to .docx if necessary
         if suffix == '.doc':
             docx_path = os.path.join(local_path, f"{Path(item.name).stem}.docx")
-            document = SpireDocument()
-            document.LoadFromFile(item_local_path)
-            document.SaveToFile(docx_path, FileFormat.Docx2016)
-            document.Close()
-            if not os.path.isfile(docx_path):  # TODO  to check ? exception
-                raise f"Didn't manage to convert {item.id} to docx format!"
+            try:
+                document = SpireDocument()
+                document.LoadFromFile(item_local_path)
+                document.SaveToFile(docx_path, FileFormat.Docx2016)
+                document.Close()
+
+            except Exception as e:
+                raise RuntimeError(f"Error converting item {item.id} to .docx format: {e}")
+
         else:
             docx_path = item_local_path
 
         output_path = self.extract_content(docx_path=docx_path, local_path=local_path, extract_tables=extract_tables)
 
         new_item = item.dataset.items.upload(local_path=output_path,
-                                             remote_path='/extracted_from_docs',  # TODO FROM THE USER
+                                             remote_path=remote_path_for_extractions,
                                              item_metadata={
                                                  'user': {'extracted_from_docs': True,
                                                           'original_item_id': item.id}})
@@ -62,9 +66,7 @@ class DocExtractor(dl.BaseServiceRunner):
         if new_item is None:
             raise dl.PlatformException(f"No items was uploaded! local paths: {output_path}")
 
-        # Remove local files
-        os.remove(docx_path)
-        os.remove(output_path)
+        shutil.rmtree(local_path)
 
         return new_item
 
@@ -84,19 +86,23 @@ class DocExtractor(dl.BaseServiceRunner):
         """
         doc = DocxDocument(docx_path)
         full_text = list()
-        for para in doc.paragraphs:
-            full_text.append(para.text)
+        table_index = 0
+        for element in doc.element.body:
+            if element.tag.endswith('p'):  # Check if element is a paragraph
+                para = element.text
+                full_text.append(para)
 
-        # TODO go by order ? of the file
-        if extract_tables is True:
-            for table in doc.tables:
+            elif element.tag.endswith('tbl') and extract_tables is True:  # Check if element is a table
+                table = doc.tables[table_index]
                 for row in table.rows:
-                    for cell in row.cells:
-                        full_text.append(cell.text)
+                    row_text = "\t".join(cell.text for cell in row.cells)
+                    full_text.append(row_text)
+                table_index += 1
 
+                # Join all collected text into one string
         text = '\n'.join(full_text)
 
-        output_path = os.path.join(local_path, f"{Path(item.name).stem}_text.txt")
+        output_path = os.path.join(local_path, f"{Path(docx_path).stem}_text.txt")
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(text)
 
@@ -107,8 +113,6 @@ class DocExtractor(dl.BaseServiceRunner):
 
 if __name__ == '__main__':
     dl.setenv('prod')
-    # item = dl.items.get(item_id="67331a749c4d316e1f94af84")  # docx
-    item = dl.items.get(item_id="67331b4ec85f75c948b7acbf")  # doc
-
+    item = dl.items.get(item_id="")
     s = DocExtractor()
     s.doc_extraction(item=item, context=dl.Context())

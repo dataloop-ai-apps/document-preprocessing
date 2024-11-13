@@ -9,6 +9,7 @@ from typing import List
 from tqdm import tqdm
 import dtlpy as dl
 import logging
+import shutil
 import time
 import nltk
 import os
@@ -35,10 +36,10 @@ class ChunksCleaner(dl.BaseServiceRunner):
             List[dl.Item]: A list of cleaned text chunk items.
         """
 
-        # node = context.node
-        # to_correct_spelling = node.metadata['customNodeConfig']['to_correct_spelling']
+        node = context.node
+        to_correct_spelling = node.metadata['customNodeConfig']['to_correct_spelling']
         # local test
-        to_correct_spelling = False
+        # to_correct_spelling = False
 
         # Download path - original items
         local_path = os.path.join(os.getcwd(), 'datasets', items[0].dataset.id, 'items')
@@ -68,6 +69,8 @@ class ChunksCleaner(dl.BaseServiceRunner):
         results = [future.result() for future in futures]
 
         logger.info('Using threads took {:.2f}[s]'.format(time.time() - tic))
+
+        shutil.rmtree(local_path)
 
         return results
 
@@ -149,17 +152,12 @@ class ChunksCleaner(dl.BaseServiceRunner):
                                                                                        'original_chunk_id': item.id}}})
         pbar.update()
 
-        # Remove local files # TODO REMOVE SHUTIL REMOVE
-        os.remove(textfile_path)
-        os.remove(chunkfile_path)
-
         return clean_chunk_item
 
 
 if __name__ == '__main__':
     dl.setenv('prod')
-    # dataset = dl.datasets.get(dataset_id="67331a4e6df6bd7ec227a877")
     filters = dl.Filters(field='metadata.user.extracted_chunk', values=True)
-    items = dl.datasets.get(dataset_id="67331a4e6df6bd7ec227a877").items.list(filters=filters).items
+    items = dl.datasets.get(dataset_id="").items.list(filters=filters).items
     s = ChunksCleaner()
     s.clean_multiple_chunks(items=items, context=dl.Context())

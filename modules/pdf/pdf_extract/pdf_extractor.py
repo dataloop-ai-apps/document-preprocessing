@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List
 import dtlpy as dl
 import logging
+import shutil
 import pypdf
 import nltk
 import fitz
@@ -20,12 +21,12 @@ class PdfExtractor(dl.BaseServiceRunner):
         :param item: Dataloop item, pdf file
         :return: Text Dataloop item
         """
-        # node = context.node
-        # extract_tables = node.metadata['customNodeConfig']['extract_images']
-        # remote_path_for_extractions = node.metadata['customNodeConfig']['remote_path_for_extractions']
+        node = context.node
+        extract_images = node.metadata['customNodeConfig']['extract_images']
+        remote_path_for_extractions = node.metadata['customNodeConfig']['remote_path_for_extractions']
         # Local test
-        extract_images = False
-        remote_path_for_extractions = '/extracted_from_pdfs'
+        # extract_images = False
+        # remote_path_for_extractions = '/extracted_from_pdfs'
 
         suffix = Path(item.name).suffix
         if not suffix == '.pdf':
@@ -54,12 +55,7 @@ class PdfExtractor(dl.BaseServiceRunner):
         else:
             all_items = [item for item in new_items]
 
-        # Remove local files:
-        for file_path in new_items_path:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-            else:
-                logger.warning(f"{file_path} does not exist, cannot be removed")
+        shutil.rmtree(local_path)
 
         return all_items
 
@@ -142,7 +138,6 @@ if __name__ == '__main__':
     import dtlpy as dl
 
     dl.setenv('prod')
-
-    item = dl.items.get(item_id="67321bd8b70e2312553afabc")
+    item = dl.items.get(item_id="")
     s = PdfExtractor()
-    s.pdf_extraction(item=item)
+    s.pdf_extraction(item=item, context=dl.Context())

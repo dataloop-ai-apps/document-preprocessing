@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List
 import dtlpy as dl
 import logging
+import shutil
 import nltk
 import os
 
@@ -31,16 +32,16 @@ class ChunksExtractor(dl.BaseServiceRunner):
         Returns:
             List[dl.Item]: A list of Dataloop items, each representing a chunk of the original text file.
         """
-        # node = context.node
-        # chunking_strategy = node.metadata['customNodeConfig']['chunking_strategy']
-        # max_chunk_size = node.metadata['customNodeConfig']['max_chunk_size']
-        # chunk_overlap = node.metadata['customNodeConfig']['chunk_overlap']
-        # chunk_overlap = node.metadata['customNodeConfig']['remote_path_for_chunks']
+        node = context.node
+        chunking_strategy = node.metadata['customNodeConfig']['chunking_strategy']
+        max_chunk_size = node.metadata['customNodeConfig']['max_chunk_size']
+        chunk_overlap = node.metadata['customNodeConfig']['chunk_overlap']
+        remote_path_for_chunks = node.metadata['customNodeConfig']['remote_path_for_chunks']
         # local test
-        chunking_strategy = 'recursive'
-        max_chunk_size = 300
-        chunk_overlap = 20
-        remote_path_for_chunks = '/chunk_files'
+        # chunking_strategy = 'recursive'
+        # max_chunk_size = 300
+        # chunk_overlap = 20
+        # remote_path_for_chunks = '/chunk_files'
 
         suffix = Path(item.name).suffix
         if suffix != '.txt':
@@ -71,6 +72,8 @@ class ChunksExtractor(dl.BaseServiceRunner):
                                                     'user': {'extracted_chunk': True,
                                                              'original_item_id': item.id}}
                                           )
+
+        shutil.rmtree(local_path)
 
         return chunks_items
 
@@ -196,6 +199,6 @@ class ChunksExtractor(dl.BaseServiceRunner):
 
 if __name__ == '__main__':
     dl.setenv('prod')
-    item = dl.items.get(item_id="67333652acd439ba91166455")
+    item = dl.items.get(item_id="")
     s = ChunksExtractor()
     s.create_chunks(item=item, context=dl.Context())
