@@ -5,10 +5,15 @@
   "version": "0.0.37",
   "description": "An application for sanitizing PPT files from all sorts of visual identities",
   "attributes": {
+    "Category": "Application",
     "Provider": "Dataloop",
-    "Category": "Pipeline",
-    "Pipeline Type": "Node",
-    "Node Type": "Other"
+    "Deployed By": "Dataloop",
+    "Application Type": [
+      "Pipeline Node"
+    ],
+    "Media Type": [
+      "Text"
+    ]
   },
   "codebase": {
     "type": "git",
