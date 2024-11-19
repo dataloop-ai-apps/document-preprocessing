@@ -244,8 +244,8 @@
             ],
             "output": [
               {
-                "type": "Item[]",
-                "name": "items"
+                "type": "Item",
+                "name": "item"
               }
             ],
             "displayIcon": "icon-dl-langchain",
@@ -264,14 +264,14 @@
             "name": "clean_multiple_chunks",
             "input": [
               {
-                "type": "Item[]",
-                "name": "items"
+                "type": "Item",
+                "name": "item"
               }
             ],
             "output": [
               {
-                "type": "Item[]",
-                "name": "items"
+                "type": "Item",
+                "name": "item"
               }
             ],
             "displayIcon": "icon-dl-unstucturedio",

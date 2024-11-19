@@ -14,7 +14,7 @@ nltk.download('punkt')
 
 class ChunksExtractor(dl.BaseServiceRunner):
 
-    def create_chunks(self, item: dl.Item, context: dl.Context) -> List[dl.Item]:
+    def create_chunks(self, item: dl.Item, context: dl.Context) -> dl.Item:
         """
         Creates and uploads text chunks from a txt file item based on specified chunking parameters.
 
@@ -74,7 +74,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
 
         shutil.rmtree(local_path)
 
-        return chunks_items
+        return item
 
     @staticmethod
     def upload_chunks(local_path, chunks, item_local_path, item, remote_path_for_chunks, metadata):
