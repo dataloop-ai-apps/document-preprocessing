@@ -11,6 +11,7 @@ RUN pip install -U \
     python-pptx==0.6.23\
     openai==1.30.3\
     opencv-python==4.8.1.78\
+    numpy==1.26.4\
     "unstructured[all-docs]==0.12.0"\
     Spire.Doc==12.7.1
 

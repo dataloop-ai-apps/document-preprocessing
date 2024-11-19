@@ -34,19 +34,6 @@
             "queueLength": 10
           }
         }
-      },
-      {
-        "name": "clean-chunks-v2",
-        "runtime": {
-          "podType": "regular-s",
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/document-preprocessing:0.1.2",
-          "concurrency": 10,
-          "autoscaler": {
-            "minReplicas": 0,
-            "maxReplicas": 2,
-            "queueLength": 10
-          }
-        }
       }
     ],
     "pipelineNodes": [
@@ -183,7 +170,7 @@
       {
         "invoke": {
           "type": "function",
-          "namespace": "clean-chunks-v2.clean_chunks_v2.clean_multiple_chunks"
+          "namespace": "txt-to-chunks-v2.clean_chunks_v2.clean_multiple_chunks"
         },
         "name": "clean_multiple_chunks",
         "categories": [
@@ -255,7 +242,7 @@
       },
       {
         "name": "clean_chunks_v2",
-        "computeConfig": "clean-chunks-v2",
+        "computeConfig": "txt-to-chunks-v2",
         "entryPoint": "modules/txt/chunking/chunks_cleaner.py",
         "className": "ChunksCleaner",
         "initInputs": [],
