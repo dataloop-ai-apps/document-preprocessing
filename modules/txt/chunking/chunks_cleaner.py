@@ -10,10 +10,13 @@ from tqdm import tqdm
 import dtlpy as dl
 import logging
 import shutil
+import nltk
 import time
 import os
 
 logger = logging.getLogger('text-preprocess-logger')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('punkt')
 
 
 class ChunksCleaner(dl.BaseServiceRunner):
@@ -33,10 +36,10 @@ class ChunksCleaner(dl.BaseServiceRunner):
             List[dl.Item]: A list of cleaned text chunk items.
         """
 
-        # node = context.node
-        # to_correct_spelling = node.metadata['customNodeConfig']['to_correct_spelling']
+        node = context.node
+        to_correct_spelling = node.metadata['customNodeConfig']['to_correct_spelling']
         # local test
-        to_correct_spelling = False
+        # to_correct_spelling = False
 
         # Filter all chunks extracted from item
         filters = dl.Filters(field='metadata.user.extracted_chunk', values=True)
@@ -155,11 +158,3 @@ class ChunksCleaner(dl.BaseServiceRunner):
         pbar.update()
 
         return clean_chunk_item
-
-
-if __name__ == '__main__':
-    dl.setenv('rc')
-    item = dl.items.get(item_id="673480213674dce50e54d050")
-
-    c = ChunksCleaner()
-    c.clean_multiple_chunks(item=item, context=dl.Context())
