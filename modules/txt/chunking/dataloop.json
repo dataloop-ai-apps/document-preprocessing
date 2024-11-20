@@ -23,20 +23,7 @@
   "components": {
     "computeConfigs": [
       {
-        "name": "txt-to-chunks-v2",
-        "runtime": {
-          "podType": "regular-s",
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/document-preprocessing:0.1.3",
-          "concurrency": 10,
-          "autoscaler": {
-            "minReplicas": 0,
-            "maxReplicas": 2,
-            "queueLength": 10
-          }
-        }
-      },
-      {
-        "name": "clean-chunks-v2",
+        "name": "chunks-v2-service",
         "runtime": {
           "podType": "regular-s",
           "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/document-preprocessing:0.1.3",
@@ -53,7 +40,7 @@
       {
         "invoke": {
           "type": "function",
-          "namespace": "txt-to-chunks-v2.txt_to_chunks_v2.create_chunks"
+          "namespace": "chunks-v2-service.chunks-v2-module.create_chunks"
         },
         "name": "create_chunks",
         "categories": [
@@ -183,7 +170,7 @@
       {
         "invoke": {
           "type": "function",
-          "namespace": "clean-chunks-v2.clean_chunks_v2.clean_multiple_chunks"
+          "namespace": "chunks-v2-service.chunks-v2-module.clean_multiple_chunks"
         },
         "name": "clean_multiple_chunks",
         "categories": [
@@ -228,8 +215,8 @@
     ],
     "modules": [
       {
-        "name": "txt_to_chunks_v2",
-        "computeConfig": "txt-to-chunks-v2",
+        "name": "chunks-v2-module",
+        "computeConfig": "chunks-v2-service",
         "entryPoint": "modules/txt/chunking/chunks_extractor.py",
         "className": "ChunksExtractor",
         "initInputs": [],
@@ -250,16 +237,7 @@
             ],
             "displayIcon": "icon-dl-langchain",
             "displayName": "Text to Chunks"
-          }
-        ]
-      },
-      {
-        "name": "clean_chunks_v2",
-        "computeConfig": "clean-chunks-v2",
-        "entryPoint": "modules/txt/chunking/chunks_cleaner.py",
-        "className": "ChunksCleaner",
-        "initInputs": [],
-        "functions": [
+          },
           {
             "name": "clean_multiple_chunks",
             "input": [
