@@ -1,9 +1,9 @@
 {
-  "displayName": "PDF to Preprocessed Text",
-  "name": "pdf_to_text",
+  "displayName": "Text Chunk Generator",
+  "name": "txt_to_chunks",
   "scope": "public",
   "version": "0.0.37",
-  "description": "An application for converting PDF to preprocessed Text items",
+  "description": "This app provide processes of large text files by splitting them into smaller, manageable chunks based on specified parameters (size, overlap, and strategy) and uploads each chunk as a separate item in Dataloop, enabling easier handling and analysis of large documents.",
   "attributes": {
     "Category": "Application",
     "Provider": "Dataloop",
@@ -23,10 +23,10 @@
   "components": {
     "computeConfigs": [
       {
-        "name": "pdf-to-text-v2",
+        "name": "chunks-v2-service",
         "runtime": {
-          "podType": "regular-m",
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.1",
+          "podType": "regular-s",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/document-preprocessing:0.1.3",
           "concurrency": 10,
           "autoscaler": {
             "minReplicas": 0,
@@ -40,15 +40,15 @@
       {
         "invoke": {
           "type": "function",
-          "namespace": "pdf-to-text-v2.pdf_to_text_v2.pdf_item_to_text"
+          "namespace": "chunks-v2-service.chunks-v2-module.create_chunks"
         },
-        "name": "pdf_to_text",
+        "name": "create_chunks",
         "categories": [
-          "Text-Preprocessing"
+          "text-utils"
         ],
-        "displayName": "PDF to Text",
-        "description": "Converting PDF to Text items",
-        "scope": "node",
+        "displayName": "Text to Chunks",
+        "description": "Extracting Chunks from text files.",
+        "scope": "project",
         "configuration": {
           "fields": [
             {
@@ -57,7 +57,7 @@
               "props": {
                 "title": true,
                 "type": "string",
-                "default": "PDF-to-Text",
+                "default": "Text-to-Chunks",
                 "required": true,
                 "placeholder": "Insert node name"
               },
@@ -146,6 +146,23 @@
                 }
               ],
               "widget": "dl-slider"
+            },
+            {
+              "name": "remote_path_for_chunks",
+              "title": "remote path for chunks",
+              "props": {
+                "type": "string",
+                "default": "/chunk_files",
+                "title": true,
+                "required": true
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-input"
             }
           ]
         }
@@ -153,15 +170,15 @@
       {
         "invoke": {
           "type": "function",
-          "namespace": "pdf-to-text-v2.preprocess_text_v2.preprocess_text"
+          "namespace": "chunks-v2-service.chunks-v2-module.clean_multiple_chunks"
         },
-        "name": "preprocess",
+        "name": "clean_multiple_chunks",
         "categories": [
-          "Text-Preprocessing"
+          "text-utils"
         ],
-        "displayName": "Text Preprocessing",
-        "description": "Preprocess text items",
-        "scope": "node",
+        "displayName": "Clean Chunks",
+        "description": "Clean Chunks using Unstructured io.",
+        "scope": "project",
         "configuration": {
           "fields": [
             {
@@ -170,7 +187,7 @@
               "props": {
                 "title": true,
                 "type": "string",
-                "default": "Preprocess-Text",
+                "default": "Clean-Chunks",
                 "required": true,
                 "placeholder": "Insert node name"
               },
@@ -183,8 +200,8 @@
               "widget": "dl-input"
             },
             {
-              "name": "to_spell",
-              "title": "to spell",
+              "name": "to_correct_spelling",
+              "title": "to correct spelling",
               "props": {
                 "type": "boolean",
                 "title": true,
@@ -198,14 +215,14 @@
     ],
     "modules": [
       {
-        "name": "pdf_to_text_v2",
-        "computeConfig": "pdf-to-text-v2",
-        "entryPoint": "modules/pdf/preprocessing_unstructured_io/converter_runner.py",
-        "className": "ConvertorRunner",
+        "name": "chunks-v2-module",
+        "computeConfig": "chunks-v2-service",
+        "entryPoint": "modules/txt/chunking/chunks_extractor.py",
+        "className": "ChunksExtractor",
         "initInputs": [],
         "functions": [
           {
-            "name": "pdf_item_to_text",
+            "name": "create_chunks",
             "input": [
               {
                 "type": "Item",
@@ -214,38 +231,29 @@
             ],
             "output": [
               {
-                "type": "Item[]",
-                "name": "items"
+                "type": "Item",
+                "name": "item"
               }
             ],
             "displayIcon": "icon-dl-langchain",
-            "displayName": "PDF item to texts"
-          }
-        ]
-      },
-      {
-        "name": "preprocess_text_v2",
-        "computeConfig": "pdf-to-text-v2",
-        "entryPoint": "modules/pdf/preprocessing_unstructured_io/preprocess_runner.py",
-        "className": "PreprocessorRunner",
-        "initInputs": [],
-        "functions": [
+            "displayName": "Text to Chunks"
+          },
           {
-            "name": "preprocess_text",
+            "name": "clean_multiple_chunks",
             "input": [
               {
-                "type": "Item[]",
-                "name": "items"
+                "type": "Item",
+                "name": "item"
               }
             ],
             "output": [
               {
-                "type": "Item[]",
-                "name": "items"
+                "type": "Item",
+                "name": "item"
               }
             ],
             "displayIcon": "icon-dl-unstucturedio",
-            "displayName": "Text item to clean text"
+            "displayName": "Cleaning Chunks"
           }
         ]
       }

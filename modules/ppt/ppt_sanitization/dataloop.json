@@ -2,20 +2,30 @@
   "displayName": "Sanitize PPT",
   "name": "sanitize-ppt-app",
   "scope": "project",
-  "version": "0.0.32",
+  "version": "0.0.37",
   "description": "An application for sanitizing PPT files from all sorts of visual identities",
   "attributes": {
+    "Category": "Application",
     "Provider": "Dataloop",
-    "Category": "Pipeline",
-    "Pipeline Type": "Node",
-    "Node Type": "Other"
+    "Deployed By": "Dataloop",
+    "Application Type": [
+      "Pipeline Node"
+    ],
+    "Media Type": [
+      "Text"
+    ]
+  },
+  "codebase": {
+    "type": "git",
+    "gitUrl": "https://github.com/dataloop-ai-apps/document-preprocessing.git",
+    "gitTag": "0.0.37"
   },
   "components": {
     "computeConfigs": [
       {
         "name": "ppt-sanitization-compute",
         "runtime": {
-          "podType": "regular-m",
+          "podType": "regular-s",
           "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.2",
           "concurrency": 10,
           "autoscaler": {
@@ -34,7 +44,7 @@
         },
         "name": "sanitize-text-ppt",
         "categories": [
-          "Text-Preprocessing"
+          "text-utils"
         ],
         "displayName": "Sanitize PPT - NER",
         "description": "Cleans Named Entity Recognitions from PPT items",

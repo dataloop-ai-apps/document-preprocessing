@@ -1,9 +1,9 @@
 {
-  "displayName": "PDF to Images",
-  "name": "pdf_to_image",
+  "displayName": "Word to Txt",
+  "name": "doc_to_txt",
   "scope": "public",
   "version": "0.0.37",
-  "description": "An application for converting PDF to Image items",
+  "description": "An application for converting Word to Txt items",
   "attributes": {
     "Category": "Application",
     "Provider": "Dataloop",
@@ -23,10 +23,10 @@
   "components": {
     "computeConfigs": [
       {
-        "name": "pdf-to-image-v2",
+        "name": "doc-to-txt-v2",
         "runtime": {
           "podType": "regular-s",
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.3",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/document-preprocessing:0.1.2",
           "concurrency": 10,
           "autoscaler": {
             "minReplicas": 0,
@@ -40,14 +40,14 @@
       {
         "invoke": {
           "type": "function",
-          "namespace": "pdf-to-image-v2.pdf_to_image_v2.pdf_item_to_images"
+          "namespace": "doc-to-txt-v2.doc_to_txt_v2.doc_extraction"
         },
-        "name": "pdf-to-image",
+        "name": "doc_to_txt",
         "categories": [
           "text-utils"
         ],
-        "displayName": "PDF to Image",
-        "description": "Converting PDF to Image items",
+        "displayName": "Word to Txt",
+        "description": "Converting Word to Txt items",
         "scope": "project",
         "configuration": {
           "fields": [
@@ -57,7 +57,7 @@
               "props": {
                 "title": true,
                 "type": "string",
-                "default": "PDF-to-Image",
+                "default": "DOC-to-Txt",
                 "required": true,
                 "placeholder": "Insert node name"
               },
@@ -70,8 +70,25 @@
               "widget": "dl-input"
             },
             {
-              "name": "apply_modality",
-              "title": "apply modality",
+              "name": "remote_path_for_extractions",
+              "title": "remote path for extractions",
+              "props": {
+                "type": "string",
+                "default": "/extracted_from_docs",
+                "title": true,
+                "required": true
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-input"
+            },
+            {
+              "name": "extract_tables",
+              "title": "extract tables",
               "props": {
                 "type": "boolean",
                 "title": true,
@@ -85,14 +102,14 @@
     ],
     "modules": [
       {
-        "name": "pdf_to_image_v2",
-        "computeConfig": "pdf-to-image-v2",
-        "entryPoint": "modules/pdf/pdf_to_image/pdf_to_image.py",
-        "className": "ServiceRunner",
+        "name": "doc_to_txt_v2",
+        "computeConfig": "doc-to-txt-v2",
+        "entryPoint": "modules/doc/doc_extract/doc_extractor.py",
+        "className": "DocExtractor",
         "initInputs": [],
         "functions": [
           {
-            "name": "pdf_item_to_images",
+            "name": "doc_extraction",
             "input": [
               {
                 "type": "Item",
@@ -102,11 +119,11 @@
             "output": [
               {
                 "type": "Item[]",
-                "name": "image_item"
+                "name": "items"
               }
             ],
-            "displayIcon": "icon-dl-item-filled",
-            "displayName": "PDF item to images"
+            "displayIcon": "icon-dl-overview",
+            "displayName": "Word to Txt"
           }
         ]
       }
