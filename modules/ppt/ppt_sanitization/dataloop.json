@@ -44,7 +44,7 @@
         },
         "name": "sanitize-text-ppt",
         "categories": [
-          "Text-Preprocessing"
+          "text-utils"
         ],
         "displayName": "Sanitize PPT - NER",
         "description": "Cleans Named Entity Recognitions from PPT items",

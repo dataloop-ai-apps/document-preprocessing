@@ -44,7 +44,7 @@
         },
         "name": "pdf_to_txt",
         "categories": [
-          "Text-Preprocessing"
+          "text-utils"
         ],
         "displayName": "PDF to Txt",
         "description": "Converting PDF to Txt items",

@@ -44,7 +44,7 @@
         },
         "name": "doc_to_txt",
         "categories": [
-          "Text-Preprocessing"
+          "text-utils"
         ],
         "displayName": "Word to Txt",
         "description": "Converting Word to Txt items",

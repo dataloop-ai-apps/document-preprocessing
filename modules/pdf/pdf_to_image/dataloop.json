@@ -44,7 +44,7 @@
         },
         "name": "pdf-to-image",
         "categories": [
-          "Text-Preprocessing"
+          "text-utils"
         ],
         "displayName": "PDF to Image",
         "description": "Converting PDF to Image items",

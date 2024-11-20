@@ -44,7 +44,7 @@
         },
         "name": "create_chunks",
         "categories": [
-          "Text-Preprocessing"
+          "text-utils"
         ],
         "displayName": "Text to Chunks",
         "description": "Extracting Chunks from text files.",
@@ -174,7 +174,7 @@
         },
         "name": "clean_multiple_chunks",
         "categories": [
-          "Text-Preprocessing"
+          "text-utils"
         ],
         "displayName": "Clean Chunks",
         "description": "Clean Chunks using Unstructured io.",
