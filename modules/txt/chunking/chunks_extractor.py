@@ -16,11 +16,13 @@ import time
 import os
 
 logger = logging.getLogger('chunks-logger')
-nltk.download('averaged_perceptron_tagger')
-nltk.download('punkt')
 
 
 class ChunksExtractor(dl.BaseServiceRunner):
+
+    def __init__(self):
+        nltk.download('averaged_perceptron_tagger')
+        nltk.download('punkt')
 
     def create_chunks(self, item: dl.Item, context: dl.Context) -> dl.Item:
         """
