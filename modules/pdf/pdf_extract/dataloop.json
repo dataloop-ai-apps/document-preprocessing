@@ -118,8 +118,8 @@
             ],
             "output": [
               {
-                "type": "Item",
-                "name": "item"
+                "type": "Item[]",
+                "name": "items"
               }
             ],
             "displayIcon": "icon-dl-overview",
