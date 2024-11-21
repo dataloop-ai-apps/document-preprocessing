@@ -259,8 +259,8 @@
             "name": "clean_multiple_chunks",
             "input": [
               {
-                "type": "Item",
-                "name": "item"
+                "type": "Item[]",
+                "name": "items"
               }
             ],
             "output": [
