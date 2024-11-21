@@ -201,7 +201,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
 
         return chunks
 
-    def clean_multiple_chunks(self, item: dl.Item, context: dl.Context) -> List[dl.Item]:
+    def clean_multiple_chunks(self, items: [dl.Item], context: dl.Context) -> List[dl.Item]:
         """
         Preprocesses multiple text chunk items in a Dataloop dataset by cleaning and optionally spell-checking each chunk.
 
@@ -222,13 +222,8 @@ class ChunksExtractor(dl.BaseServiceRunner):
         # local test
         # to_correct_spelling = False
 
-        # Filter all chunks extracted from item
-        filters = dl.Filters(field='metadata.user.extracted_chunk', values=True)
-        filters.add(field='metadata.user.original_item_id', values=item.id)
-        items = item.dataset.items.list(filters=filters).items
-
         # Download path - original items
-        local_path = os.path.join(os.getcwd(), 'datasets', item.dataset.id, 'items')
+        local_path = os.path.join(os.getcwd(), 'datasets', items[0].dataset.id, 'items')
         os.makedirs(local_path, exist_ok=True)
 
         # Saving path - converted text items
