@@ -12,7 +12,7 @@ logger = logging.getLogger('pdf-to-text-logger')
 
 class PdfExtractor(dl.BaseServiceRunner):
 
-    def pdf_extraction(self, item: dl.Item, context: dl.Context) -> dl.Item:
+    def pdf_extraction(self, item: dl.Item, context: dl.Context) -> List[dl.Item]:
         """
         The extracting text from pdf item and uploading it as a text file.
 
@@ -54,7 +54,7 @@ class PdfExtractor(dl.BaseServiceRunner):
 
         shutil.rmtree(local_path)
 
-        return item
+        return all_items
 
     @staticmethod
     def extract_text_from_pdf(pdf_path: str) -> List[str]:
