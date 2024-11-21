@@ -2,7 +2,7 @@
   "displayName": "PDF to Images",
   "name": "pdf_to_image",
   "scope": "public",
-  "version": "0.0.39",
+  "version": "0.0.40",
   "description": "An application for converting PDF to Image items",
   "attributes": {
     "Category": "Application",
@@ -18,7 +18,7 @@
   "codebase": {
     "type": "git",
     "gitUrl": "https://github.com/dataloop-ai-apps/document-preprocessing.git",
-    "gitTag": "0.0.39"
+    "gitTag": "0.0.40"
   },
   "components": {
     "computeConfigs": [
