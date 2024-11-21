@@ -64,7 +64,10 @@ class DocExtractor(dl.BaseServiceRunner):
         if new_item is None:
             raise dl.PlatformException(f"No items was uploaded! local paths: {output_path}")
 
-        shutil.rmtree(local_path)
+        try:
+            shutil.rmtree(local_path)
+        except FileNotFoundError:
+            logger.warning(f"Local path not found: {local_path}")
 
         return new_item
 
