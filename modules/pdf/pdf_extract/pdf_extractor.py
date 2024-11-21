@@ -52,7 +52,10 @@ class PdfExtractor(dl.BaseServiceRunner):
         else:
             all_items = [item for item in new_items]
 
-        shutil.rmtree(local_path)
+        try:
+            shutil.rmtree(local_path)
+        except FileNotFoundError:
+            logger.warning(f"Local path not found: {local_path}")
 
         return all_items
 
