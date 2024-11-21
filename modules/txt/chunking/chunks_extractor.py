@@ -82,10 +82,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
                                                       'original_item_id': item.id}}
                                    )
 
-        try:
-            shutil.rmtree(local_path)
-        except FileNotFoundError:
-            logger.warning(f"Local path not found: {local_path}")
+        shutil.rmtree(local_path, ignore_errors=True)
 
         return items
 
@@ -252,10 +249,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
 
         logger.info('Using threads took {:.2f}[s]'.format(time.time() - tic))
 
-        try:
-            shutil.rmtree(local_path)
-        except FileNotFoundError:
-            logger.warning(f"Local path not found: {local_path}")
+        shutil.rmtree(local_path, ignore_errors=True)
 
         return results
 
