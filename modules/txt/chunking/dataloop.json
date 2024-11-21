@@ -208,6 +208,23 @@
                 "default": false
               },
               "widget": "dl-checkbox"
+            },
+            {
+              "name": "remote_path_for_clean_chunks",
+              "title": "remote path for clean chunks",
+              "props": {
+                "type": "string",
+                "default": "/clean_chunk",
+                "title": true,
+                "required": true
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-input"
             }
           ]
         }
