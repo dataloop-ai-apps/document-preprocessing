@@ -142,13 +142,6 @@ class ChunksExtractor(dl.BaseServiceRunner):
         else:
             chunks_items = [item for item in chunks_items]
 
-        # Remove local files:
-        for file_path in chunks_paths:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-            else:
-                logger.warning(f"{file_path} does not exist, cannot be removed")
-
         return chunks_items
 
     @staticmethod
