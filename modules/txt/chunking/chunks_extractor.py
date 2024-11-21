@@ -222,6 +222,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
 
         node = context.node
         to_correct_spelling = node.metadata['customNodeConfig']['to_correct_spelling']
+        remote_path_for_clean_chunks = node.metadata['customNodeConfig']['remote_path_for_clean_chunks']
         # local test
         # to_correct_spelling = False
 
@@ -251,7 +252,8 @@ class ChunksExtractor(dl.BaseServiceRunner):
                               'item': item,
                               'local_path': local_path,
                               'chunk_files_folder': chunk_files_folder,
-                              'to_correct_spelling': to_correct_spelling
+                              'to_correct_spelling': to_correct_spelling,
+                              "remote_path_for_clean_chunks": remote_path_for_clean_chunks
                               }
                     future = executor.submit(self.clean_chunk, **kwargs)
                     futures.append(future)
@@ -265,7 +267,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
 
     @staticmethod
     def clean_chunk(pbar: tqdm, item: dl.Item, local_path: str, chunk_files_folder: str,
-                    to_correct_spelling: bool = True) -> dl.Item:
+                    remote_path_for_clean_chunks: str, to_correct_spelling: bool = True) -> dl.Item:
         """
         Cleans a text chunk item using various text preprocessing functions and optionally applies spell-checking.
 
@@ -279,6 +281,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
             local_path (str): Local path where the item is downloaded.
             chunk_files_folder (str): Path for saving the locally cleaned chunk file.
             to_correct_spelling (bool, optional): Whether to apply spell-checking using autocorrect. Defaults to True.
+            remote_path_for_clean_chunks (str)
 
         Returns:
             dl.Item: The cleaned text chunk item uploaded back to the Dataloop dataset.
@@ -334,7 +337,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
 
         original_id = item.metadata.get('user', dict()).get('original_item_id', None)
         clean_chunk_item = item.dataset.items.upload(local_path=chunkfile_path,
-                                                     remote_path='/clean_chunks_files',
+                                                     remote_path=remote_path_for_clean_chunks,
                                                      item_metadata={
                                                          'user': {'prepossess_chunk': {'clean_chunk': True,
                                                                                        'original_item_id': original_id,
