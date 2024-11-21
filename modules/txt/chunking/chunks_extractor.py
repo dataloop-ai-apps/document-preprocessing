@@ -72,22 +72,22 @@ class ChunksExtractor(dl.BaseServiceRunner):
                                         chunk_size=max_chunk_size,
                                         chunk_overlap=chunk_overlap)
 
-        chunks_items = self.upload_chunks(local_path=local_path,
-                                          chunks=chunks,
-                                          item_local_path=item_local_path,
-                                          item=item,
-                                          remote_path_for_chunks=remote_path_for_chunks,
-                                          metadata={'system': {'document': item.name},
-                                                    'user': {'extracted_chunk': True,
-                                                             'original_item_id': item.id}}
-                                          )
+        items = self.upload_chunks(local_path=local_path,
+                                   chunks=chunks,
+                                   item_local_path=item_local_path,
+                                   item=item,
+                                   remote_path_for_chunks=remote_path_for_chunks,
+                                   metadata={'system': {'document': item.name},
+                                             'user': {'extracted_chunk': True,
+                                                      'original_item_id': item.id}}
+                                   )
 
         try:
             shutil.rmtree(local_path)
         except FileNotFoundError:
             logger.warning(f"Local path not found: {local_path}")
 
-        return chunks_items
+        return items
 
     @staticmethod
     def upload_chunks(local_path, chunks, item_local_path, item, remote_path_for_chunks, metadata):
