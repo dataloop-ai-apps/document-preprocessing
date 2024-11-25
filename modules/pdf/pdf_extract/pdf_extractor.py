@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import List
 import dtlpy as dl
+import tempfile
 import logging
-import shutil
 import pypdf
 import fitz
 import os
@@ -22,40 +22,32 @@ class PdfExtractor(dl.BaseServiceRunner):
         node = context.node
         extract_images = node.metadata['customNodeConfig']['extract_images']
         remote_path_for_extractions = node.metadata['customNodeConfig']['remote_path_for_extractions']
-        # Local test
-        # extract_images = False
-        # remote_path_for_extractions = '/extracted_from_pdfs'
 
         if not item.mimetype == 'application/pdf':
             raise ValueError(f"Item id : {item.id} is not a PDF file! This functions excepts pdf only")
 
         # Download item
-        local_path = os.path.join(os.getcwd(), 'datasets', item.dataset.id, 'items', os.path.dirname(item.filename[1:]))
-        os.makedirs(local_path, exist_ok=True)
-        item_local_path = item.download(local_path=local_path)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            item_local_path = item.download(local_path=temp_dir)
 
-        new_items_path = self.extract_text_from_pdf(pdf_path=item_local_path)
-        if extract_images is True:
-            new_images_path = self.extract_images_from_pdf(pdf_path=item_local_path)
-            new_items_path.extend(new_images_path)
+            new_items_path = self.extract_text_from_pdf(pdf_path=item_local_path)
+            if extract_images is True:
+                new_images_path = self.extract_images_from_pdf(pdf_path=item_local_path)
+                new_items_path.extend(new_images_path)
 
-        new_items = item.dataset.items.upload(local_path=new_items_path,
-                                              remote_path=remote_path_for_extractions,
-                                              item_metadata={
-                                                  'user': {'extracted_from_pdf': True,
-                                                           'original_item_id': item.id}})
+            new_items = item.dataset.items.upload(local_path=new_items_path,
+                                                  remote_path=remote_path_for_extractions,
+                                                  item_metadata={
+                                                      'user': {'extracted_from_pdf': True,
+                                                               'original_item_id': item.id}},
+                                                  overwrite=True)
 
-        if new_items is None:
-            raise dl.PlatformException(f"No items was uploaded! local paths: {new_items_path}")
-        elif isinstance(new_items, dl.Item):
-            all_items = [new_items]
-        else:
-            all_items = [item for item in new_items]
-
-        try:
-            shutil.rmtree(local_path)
-        except FileNotFoundError:
-            logger.warning(f"Local path not found: {local_path}")
+            if new_items is None:
+                raise dl.PlatformException(f"No items was uploaded! local paths: {new_items_path}")
+            elif isinstance(new_items, dl.Item):
+                all_items = [new_items]
+            else:
+                all_items = [item for item in new_items]
 
         return all_items
 
