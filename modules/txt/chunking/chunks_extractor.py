@@ -6,11 +6,12 @@ from concurrent.futures import ThreadPoolExecutor
 from unstructured.documents.elements import Text
 from autocorrect import Speller
 from functools import partial
+from pathlib import Path
 from typing import List
 from tqdm import tqdm
 import dtlpy as dl
+import tempfile
 import logging
-import shutil
 import nltk
 import time
 import os
@@ -58,11 +59,6 @@ class ChunksExtractor(dl.BaseServiceRunner):
                 f"Item id : {item.id} is not txt file. This functions excepts txt only. "
                 f"Use other extracting applications from Marketplace to convert text format to txt")
 
-        # Download path - original items
-        local_path = os.path.join(os.getcwd(), 'datasets', item.dataset.id, os.path.dirname(item.filename[1:]))
-        os.makedirs(local_path, exist_ok=True)
-        item_local_path = item.download(local_path=local_path)
-
         # Extract text
         buffer = item.download(save_locally=False)
         text = buffer.read().decode('utf-8')
@@ -72,9 +68,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
                                         chunk_size=max_chunk_size,
                                         chunk_overlap=chunk_overlap)
 
-        items = self.upload_chunks(local_path=local_path,
-                                   chunks=chunks,
-                                   item_local_path=item_local_path,
+        items = self.upload_chunks(chunks=chunks,
                                    item=item,
                                    remote_path_for_chunks=remote_path_for_chunks,
                                    metadata={'system': {'document': item.name},
@@ -82,12 +76,10 @@ class ChunksExtractor(dl.BaseServiceRunner):
                                                       'original_item_id': item.id}}
                                    )
 
-        shutil.rmtree(local_path, ignore_errors=True)
-
         return items
 
     @staticmethod
-    def upload_chunks(local_path, chunks, item_local_path, item, remote_path_for_chunks, metadata):
+    def upload_chunks(chunks, item, remote_path_for_chunks, metadata):
         """
         Saves each text chunk as a separate file, uploads the files as Dataloop items, and removes local copies.
 
@@ -95,9 +87,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
         to the Dataloop platform in bulk. Each uploaded file is associated with the original item metadata.
 
         Args:
-            local_path (str): The directory path where chunk files will be stored locally before upload.
             chunks (List[str]): A list of text chunks to be saved and uploaded.
-            item_local_path (str): The local path of the original item, used to generate chunk file names.
             item (dl.Item): The original Dataloop item that the chunks are derived from.
             metadata (dict): Metadata to associate with each uploaded chunk item, including any relevant system tags.
             remote_path_for_chunks (str): Remote path for the created chunks.
@@ -109,37 +99,34 @@ class ChunksExtractor(dl.BaseServiceRunner):
             dl.PlatformException: If no items were uploaded successfully.
         """
 
-        chunks_files_folder = os.path.join(local_path, 'chunks_files')
-        os.makedirs(chunks_files_folder, exist_ok=True)
-
         chunks_paths = []
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for ind, chunk in enumerate(chunks):
+                base_name = item.name
+                chunk_filename = f"{os.path.splitext(base_name)[0]}-{ind}.txt"
+                chunk_path = os.path.join(temp_dir, chunk_filename)
 
-        for ind, chunk in enumerate(chunks):
-            chunk_path = os.path.basename(item_local_path)
-            chunk_path = os.path.join(chunks_files_folder,
-                                      os.path.splitext(chunk_path)[0] + '-' + str(ind) + '.txt')
+                with open(chunk_path, 'w', encoding='utf-8') as f:
+                    f.write(chunk)
+                chunks_paths.append(chunk_path)
 
-            with open(chunk_path, 'w', encoding='utf-8') as f:
-                f.write(chunk)
-            chunks_paths.append(chunk_path)
+            # Uploading all chunk items - bulk
+            chunks_items = item.dataset.items.upload(local_path=chunks_paths,
+                                                     remote_path=remote_path_for_chunks,
+                                                     item_metadata=metadata
+                                                     )
 
-        # Uploading all chunk items - bulk
-        chunks_items = item.dataset.items.upload(local_path=chunks_paths,
-                                                 remote_path=remote_path_for_chunks,
-                                                 item_metadata=metadata
-                                                 )
+            # raise if none
+            if chunks_items is None:
+                raise dl.PlatformException(f"No items was uploaded! local paths: {chunks_paths}")
 
-        # raise if none
-        if chunks_items is None:
-            raise dl.PlatformException(f"No items was uploaded! local paths: {chunks_paths}")
+            elif isinstance(chunks_items, dl.Item):
+                chunks_items = [chunks_items]
 
-        elif isinstance(chunks_items, dl.Item):
-            chunks_items = [chunks_items]
+            else:
+                chunks_items = [item for item in chunks_items]
 
-        else:
-            chunks_items = [item for item in chunks_items]
-
-        return chunks_items
+            return chunks_items
 
     @staticmethod
     def chunking_strategy(text: str, strategy: str, chunk_size: int, chunk_overlap: int) -> List[str]:
@@ -218,14 +205,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
         remote_path_for_clean_chunks = node.metadata['customNodeConfig']['remote_path_for_clean_chunks']
         # local test
         # to_correct_spelling = False
-
-        # Download path - original items
-        local_path = os.path.join(os.getcwd(), 'datasets', items[0].dataset.id, 'items')
-        os.makedirs(local_path, exist_ok=True)
-
-        # Saving path - converted text items
-        chunk_files_folder = os.path.join(local_path, 'chunk_files')
-        os.makedirs(chunk_files_folder, exist_ok=True)
+        # remote_path_for_clean_chunks = '/clean_chunks'
 
         ###############################################
         # Clean text by using unstructured io library #
@@ -238,8 +218,6 @@ class ChunksExtractor(dl.BaseServiceRunner):
                 for item in items:
                     kwargs = {'pbar': pbar,
                               'item': item,
-                              'local_path': local_path,
-                              'chunk_files_folder': chunk_files_folder,
                               'to_correct_spelling': to_correct_spelling,
                               "remote_path_for_clean_chunks": remote_path_for_clean_chunks
                               }
@@ -249,13 +227,11 @@ class ChunksExtractor(dl.BaseServiceRunner):
 
         logger.info('Using threads took {:.2f}[s]'.format(time.time() - tic))
 
-        shutil.rmtree(local_path, ignore_errors=True)
-
         return results
 
     @staticmethod
-    def clean_chunk(pbar: tqdm, item: dl.Item, local_path: str, chunk_files_folder: str,
-                    remote_path_for_clean_chunks: str, to_correct_spelling: bool = True) -> dl.Item:
+    def clean_chunk(pbar: tqdm, item: dl.Item, remote_path_for_clean_chunks: str,
+                    to_correct_spelling: bool = True) -> dl.Item:
         """
         Cleans a text chunk item using various text preprocessing functions and optionally applies spell-checking.
 
@@ -266,10 +242,8 @@ class ChunksExtractor(dl.BaseServiceRunner):
         Args:
             pbar (tqdm): Progress bar instance to track progress.
             item (dl.Item): The Dataloop text item representing a chunk of the original file.
-            local_path (str): Local path where the item is downloaded.
-            chunk_files_folder (str): Path for saving the locally cleaned chunk file.
             to_correct_spelling (bool, optional): Whether to apply spell-checking using autocorrect. Defaults to True.
-            remote_path_for_clean_chunks (str)
+            remote_path_for_clean_chunks (str) : Remote path for the clean chunks.
 
         Returns:
             dl.Item: The cleaned text chunk item uploaded back to the Dataloop dataset.
@@ -295,41 +269,40 @@ class ChunksExtractor(dl.BaseServiceRunner):
                     remove_punctuation
                     ]
 
-        item_local_path = os.path.join(local_path, os.path.dirname(item.filename[1:]))
-        textfile_path = item.download(local_path=item_local_path)
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.txt') as temp_download_file:
+            textfile_path = item.download(local_path=temp_download_file.name)
 
-        # Extract content
-        elements = partition_text(filename=textfile_path)
-        text = ''
-        # Clean content
-        for element in elements:
-            element = Text(element.text)
-            element.apply(*cleaners)
-            logger.info("Applied cleaning methods")
-            if to_correct_spelling is True:
-                spell = Speller(lang='en')
-                clean_text = spell(element.text)
-                text += clean_text + ''
-                logger.info("Applied autocorrect spelling")
-            else:
-                text += element.text + ' '
+            # Extract content
+            elements = partition_text(filename=textfile_path)
+            text = ''
+            # Clean content
+            for element in elements:
+                element = Text(element.text)
+                element.apply(*cleaners)
+                logger.info("Applied cleaning methods")
+                if to_correct_spelling is True:
+                    spell = Speller(lang='en')
+                    clean_text = spell(element.text)
+                    text += clean_text + ''
+                    logger.info("Applied autocorrect spelling")
+                else:
+                    text += element.text + ' '
 
         # Save
-        # each chunk as separated text file
-        chunkfile_path = os.path.join(chunk_files_folder,
-                                      os.path.splitext(item.name)[0] + '-clean' + '.txt')
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_file_path = os.path.join(temp_dir, f"{Path(item.name).stem}_text.txt")
+            with open(temp_file_path, "w", encoding="utf-8") as temp_text_file:
+                temp_text_file.write(text)
 
-        with open(chunkfile_path, 'w', encoding='utf-8', errors='ignore') as f:
-            f.write(text)
-        logger.info(f"Saved chunk to text file in: {chunkfile_path}")
+            logger.info(f"Saved chunk to temporary file at: {temp_file_path}")
 
-        original_id = item.metadata.get('user', dict()).get('original_item_id', None)
-        clean_chunk_item = item.dataset.items.upload(local_path=chunkfile_path,
-                                                     remote_path=remote_path_for_clean_chunks,
-                                                     item_metadata={
-                                                         'user': {'prepossess_chunk': {'clean_chunk': True,
-                                                                                       'original_item_id': original_id,
-                                                                                       'original_chunk_id': item.id}}})
+            original_id = item.metadata.get('user', dict()).get('original_item_id', None)
+            clean_chunk_item = item.dataset.items.upload(local_path=temp_file_path,
+                                                         remote_path=remote_path_for_clean_chunks,
+                                                         item_metadata={
+                                                             'user': {'prepossess_chunk': {'clean_chunk': True,
+                                                                                           'original_item_id': original_id,
+                                                                                           'original_chunk_id': item.id}}})
         pbar.update()
 
         return clean_chunk_item
