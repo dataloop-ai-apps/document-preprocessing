@@ -127,10 +127,3 @@ class PdfExtractor(dl.BaseServiceRunner):
                     logger.info(f"Image saved as {image_name}")
 
         return images_paths
-
-
-if __name__ == '__main__':
-    dl.setenv('rc')
-    item = dl.items.get(None, "673472b4e9e82b7bc45034ef")
-    s = PdfExtractor()
-    items = s.pdf_extraction(item=item, context=dl.Context())
