@@ -25,9 +25,6 @@ class DocExtractor(dl.BaseServiceRunner):
         node = context.node
         extract_tables = node.metadata['customNodeConfig']['extract_tables']
         remote_path_for_extractions = node.metadata['customNodeConfig']['remote_path_for_extractions']
-        # Local test
-        # extract_tables = False
-        # remote_path_for_extractions = '/extracted_from_docs'
 
         suffix = Path(item.name).suffix.lower()
         if suffix not in {'.doc', '.docx'}:

@@ -48,11 +48,6 @@ class ChunksExtractor(dl.BaseServiceRunner):
         max_chunk_size = node.metadata['customNodeConfig']['max_chunk_size']
         chunk_overlap = node.metadata['customNodeConfig']['chunk_overlap']
         remote_path_for_chunks = node.metadata['customNodeConfig']['remote_path_for_chunks']
-        # local test
-        # chunking_strategy = 'recursive'
-        # max_chunk_size = 300
-        # chunk_overlap = 20
-        # remote_path_for_chunks = '/chunk_files'
 
         if not item.mimetype == 'text/plain':
             raise ValueError(
@@ -203,9 +198,6 @@ class ChunksExtractor(dl.BaseServiceRunner):
         node = context.node
         to_correct_spelling = node.metadata['customNodeConfig']['to_correct_spelling']
         remote_path_for_clean_chunks = node.metadata['customNodeConfig']['remote_path_for_clean_chunks']
-        # local test
-        # to_correct_spelling = False
-        # remote_path_for_clean_chunks = '/clean_chunks'
 
         ###############################################
         # Clean text by using unstructured io library #

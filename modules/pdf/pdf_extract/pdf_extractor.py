@@ -22,9 +22,6 @@ class PdfExtractor(dl.BaseServiceRunner):
         node = context.node
         extract_images = node.metadata['customNodeConfig']['extract_images']
         remote_path_for_extractions = node.metadata['customNodeConfig']['remote_path_for_extractions']
-        # Local test
-        # extract_images = True
-        # remote_path_for_extractions = '/extracted_from_pdfs'
 
         if not item.mimetype == 'application/pdf':
             raise ValueError(f"Item id : {item.id} is not a PDF file! This functions excepts pdf only")
