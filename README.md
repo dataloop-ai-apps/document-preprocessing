@@ -3,7 +3,6 @@
 This repository provides Dataloop applications for preprocessing document files, including content extraction and text
 chunking. It is designed to facilitate the management and processing of textual data for use in downstream applications.
 
-
 ## Features
 
 - **Content Extraction**: Extracts text from file, by its format.
@@ -20,6 +19,6 @@ For more detailed information about each module, refer to the individual README 
 - [TXT Chunking Module](modules/txt/chunking/README.md)
 - [TXT Contextual Chunking Module](modules/txt/contextual_chunks/README.md)
 
-
 # Installations
-All apps can be found in `Marketplace` under `Applications` tab:
+
+All apps can be found in `Marketplace` under `Applications` tab.
