@@ -1,13 +1,10 @@
 from pathlib import Path
-from typing import List
 import dtlpy as dl
 import tempfile
 import logging
-import pypdf
-import fitz
 import os
 
-logger = logging.getLogger('chunk_to_prompt')
+logger = logging.getLogger('contextual-chunks')
 
 
 class ServiceRunner(dl.BaseServiceRunner):
@@ -31,7 +28,8 @@ class ServiceRunner(dl.BaseServiceRunner):
         buffer = item.download(save_locally=False)
         chunk_text = buffer.read().decode('utf-8')
 
-        original_item_id = self.find_key_recursively(item.metadata.get('user', {}), 'original_item_id')
+        original_item_id = item.metadata.get('user', {}).get('original_item_id')
+
         if original_item_id is None:
             raise dl.exceptions.NotFound(
                 f"Item {item.id} is missing the 'original_item_id' in its metadata. Please add "
@@ -44,9 +42,9 @@ class ServiceRunner(dl.BaseServiceRunner):
                                              chunk_text=chunk_text,
                                              prompt_item_name=item.name)
 
-        item.items.upload(prompt_item, remote_path=remote_path,
-                          item_metadata={'user': {'txt_chunk_id': item.id,
-                                                  'full_text_item_id': original_item_id}})
+        item.dataset.items.upload(prompt_item, remote_path=remote_path,
+                                  item_metadata={'user': {'txt_chunk_id': item.id,
+                                                          'original_item_id': original_item_id}})
 
         return item
 
@@ -70,17 +68,6 @@ class ServiceRunner(dl.BaseServiceRunner):
 
         return prompt_item
 
-    @staticmethod
-    def find_key_recursively(d, key):
-        if isinstance(d, dict):
-            if key in d:
-                return d[key]
-            for sub_key in d.values():
-                result = ServiceRunner.find_key_recursively(sub_key, key)
-                if result is not None:
-                    return result
-        return None
-
     def add_response_to_chunk(self, item: dl.Item, model: dl.Model, context: dl.Context) -> dl.Item:
         """
         Creates Contextual prompt item from a txt chunk item.
@@ -89,17 +76,13 @@ class ServiceRunner(dl.BaseServiceRunner):
         :param item: Model entity generated the response.
         :param context: The Dataloop context providing parameters for chunking, including:
                 - `remote_path` (str): The remote path for uploading the prompt chunk.
-                - `create_new_item` (bool): Whether to create a new chunk item or update the original chunk.
+                - `overwrite_chunk` (bool): Whether to create a new chunk item or overwrite the original chunk.
         """
 
-        # node = context.node
-        # remote_path = node.metadata['customNodeConfig']['remote_path']
-        # create_new_item = node.metadata['customNodeConfig']['create_new_item']
-        # Test locally
-        remote_path = '/chunks'
-        create_new_item = False
+        node = context.node
+        remote_path = node.metadata['customNodeConfig']['remote_path']
+        overwrite_chunk = node.metadata['customNodeConfig']['overwrite_chunk']
 
-        item.annotations.list()
         prompt_item = dl.PromptItem.from_item(item)
         messages = prompt_item.to_messages(model_name=model.name)
         assistant_response = [message.get("content", [{}])[0].get("text", "") for message in messages if
@@ -107,9 +90,13 @@ class ServiceRunner(dl.BaseServiceRunner):
 
         if len(assistant_response) < 1:
             raise dl.exceptions.NotFound(f"Item id {item.id} has no annotations by Model {model.id}")
-        context = assistant_response[0]
 
-        original_item_id = self.find_key_recursively(item.metadata.get('user', {}), 'original_item_id')
+        context = assistant_response[0]
+        logger.info(
+            f"Found {len(assistant_response)} Assistance responses. Taking the first one, and considers it as the "
+            f"context for the chunk.")
+
+        original_item_id = item.metadata.get('user', {}).get('original_item_id')
         if original_item_id is None:
             raise dl.exceptions.NotFound(
                 f"Item {item.id} is missing the 'original_item_id' in its metadata. Please add "
@@ -128,11 +115,16 @@ class ServiceRunner(dl.BaseServiceRunner):
                 temp_text_file.write(prompt_text)
 
             # Upload the file
-            if create_new_item:
-                remote_name = f"{Path(original_item.name).stem}_contextual.txt"
-                # Use the temp_file path (not the file object) for uploading
+            if overwrite_chunk is True:
                 original_item.dataset.items.upload(
-                    local_path=temp_file,  # pass the file path, not the file object
+                    local_path=temp_file,
+                    remote_name=original_item.name,
+                    overwrite=True
+                )
+            else:
+                remote_name = f"{Path(original_item.name).stem}_contextual.txt"
+                original_item.dataset.items.upload(
+                    local_path=temp_file,
                     remote_path=remote_path,
                     remote_name=remote_name,
                     item_metadata={
@@ -142,23 +134,5 @@ class ServiceRunner(dl.BaseServiceRunner):
                         }
                     }
                 )
-            else:
-                # For the existing item, upload again using the temp_file path
-                original_item.dataset.items.upload(
-                    local_path=temp_file,  # pass the file path, not the file object
-                    remote_name=original_item.name,
-                    overwrite=True
-                )
 
         return item
-
-
-if __name__ == '__main__':
-    dl.setenv('rc')
-
-    # chunk_item = dl.items.get(None, item_id="673dddb5cd16a5f52466c1ea")
-    chunk_prompt = dl.items.get(None, item_id="6731d473654ff49d405e528e")
-    model = dl.models.get(None, model_id="6731d495bba6dca546667226")
-
-    s = ServiceRunner()
-    s.add_response_to_chunk(chunk_prompt, model, context=dl.Context())

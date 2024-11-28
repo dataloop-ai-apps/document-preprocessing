@@ -292,9 +292,9 @@ class ChunksExtractor(dl.BaseServiceRunner):
             clean_chunk_item = item.dataset.items.upload(local_path=temp_file_path,
                                                          remote_path=remote_path_for_clean_chunks,
                                                          item_metadata={
-                                                             'user': {'prepossess_chunk': {'clean_chunk': True,
-                                                                                           'original_item_id': original_id,
-                                                                                           'original_chunk_id': item.id}}})
+                                                             'user': {'clean_chunk': True,
+                                                                      'original_item_id': original_id,
+                                                                      'original_chunk_id': item.id}})
         pbar.update()
 
         return clean_chunk_item

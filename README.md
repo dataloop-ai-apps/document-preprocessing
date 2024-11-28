@@ -18,6 +18,7 @@ For more detailed information about each module, refer to the individual README 
 - [PDF Extraction Module](modules/pdf/pdf_extract/README.md)
 - [PPT Sanitization Module](modules/ppt/ppt_sanitization/README.md)
 - [TXT Chunking Module](modules/txt/chunking/README.md)
+- [TXT Contextual Chunking Module](modules/txt/contextual_chunks/README.md)
 
 
 # Installations

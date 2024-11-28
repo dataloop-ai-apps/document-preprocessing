@@ -8,6 +8,7 @@
     "Category": "Application",
     "Provider": "Dataloop",
     "Deployed By": "Dataloop",
+    "License": "Apache 2.0",
     "Application Type": [
       "Pipeline Node"
     ],
@@ -17,7 +18,7 @@
   },
   "codebase": {
     "type": "git",
-    "gitUrl": "https://github.com/dataloop-ai-apps/document-preprocessing.git",
+    "gitUrl": "dataloopai/dtlpy-agent:cpu.py3.10.opencv",
     "gitTag": "0.0.37"
   },
   "components": {
@@ -25,7 +26,7 @@
       {
         "name": "chunks-v2-service",
         "runtime": {
-          "podType": "regular-s",
+          "podType": "regular-xs",
           "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/document-preprocessing:0.1.3",
           "concurrency": 10,
           "autoscaler": {
@@ -122,8 +123,8 @@
               "widget": "dl-input"
             },
             {
-              "name": "create_new_item",
-              "title": "create new item",
+              "name": "overwrite_chunk",
+              "title": "Overwrite the chunk item",
               "props": {
                 "type": "boolean",
                 "title": true,
@@ -183,6 +184,10 @@
               {
                 "type": "Item",
                 "name": "item"
+              },
+              {
+                "type": "Model",
+                "name": "model"
               }
             ],
             "output": [

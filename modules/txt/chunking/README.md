@@ -1,6 +1,6 @@
 # Chunks Cleaner and Extractor Apps
 
-This repository contains two apps designed to preprocess and manage text data in Dataloop.
+This service contains two apps designed to preprocess and manage text data in Dataloop.
 
 ## Chunks Cleaner
 
