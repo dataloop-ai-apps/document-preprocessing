@@ -38,15 +38,15 @@ class ServiceRunner(dl.BaseServiceRunner):
         buffer = dl.items.get(item_id=original_item_id).download(save_locally=False)
         original_text = buffer.read().decode('utf-8')
 
-        prompt_item = self.contextual_prompt(original_text=original_text,
-                                             chunk_text=chunk_text,
-                                             prompt_item_name=item.name)
+        p_item = self.contextual_prompt(original_text=original_text,
+                                        chunk_text=chunk_text,
+                                        prompt_item_name=item.name)
 
-        item.dataset.items.upload(prompt_item, remote_path=remote_path,
-                                  item_metadata={'user': {'txt_chunk_id': item.id,
-                                                          'original_item_id': original_item_id}})
+        prompt_item = item.dataset.items.upload(p_item, remote_path=remote_path,
+                                                item_metadata={'user': {'txt_chunk_id': item.id,
+                                                                        'original_item_id': original_item_id}})
 
-        return item
+        return prompt_item
 
     @staticmethod
     def contextual_prompt(original_text: str, chunk_text: str, prompt_item_name: str):
