@@ -1,6 +1,6 @@
 # Chunks Cleaner and Extractor Apps
 
-This repository contains two apps designed to preprocess and manage text data in Dataloop.
+This service contains two apps designed to preprocess and manage text data in Dataloop.
 
 ## Chunks Cleaner
 
@@ -39,5 +39,12 @@ The following parameters can be controlled via the Dataloop node panel:
 2. Split the file into smaller chunks.
 3. Upload the chunks back to Dataloop.
 
+## Acknowledgments 
+This application makes use of the following open-source projects: 
+1. [Unstructured IO](https://github.com/Unstructured-IO/unstructured) Copyright 2022 Unstructured Technologies, Inc
+-->Licensed under the Apache License 2.0. You can find a copy of the license [here](https://github.com/Unstructured-IO/unstructured/blob/main/LICENSE).
+2. [LangChain](https://github.com/langchain-ai/langchain)  Copyright (c) LangChain, Inc.
+--> Licensed under the MIT License. You can find a copy of the license [here](https://github.com/langchain-ai/langchain/blob/main/LICENSE). 
 
+We greatly appreciate the efforts of the open-source community!
 

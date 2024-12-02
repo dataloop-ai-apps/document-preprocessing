@@ -261,8 +261,10 @@ class ChunksExtractor(dl.BaseServiceRunner):
                     remove_punctuation
                     ]
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.txt') as temp_download_file:
-            textfile_path = item.download(local_path=temp_download_file.name)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, item.name)
+            textfile_path = item.download(local_path=file_path, save_locally=True)
+            logger.info(f"Downloaded item to temporary path: {textfile_path}")
 
             # Extract content
             elements = partition_text(filename=textfile_path)
@@ -292,9 +294,9 @@ class ChunksExtractor(dl.BaseServiceRunner):
             clean_chunk_item = item.dataset.items.upload(local_path=temp_file_path,
                                                          remote_path=remote_path_for_clean_chunks,
                                                          item_metadata={
-                                                             'user': {'prepossess_chunk': {'clean_chunk': True,
-                                                                                           'original_item_id': original_id,
-                                                                                           'original_chunk_id': item.id}}})
+                                                             'user': {'clean_chunk': True,
+                                                                      'original_item_id': original_id,
+                                                                      'original_chunk_id': item.id}})
         pbar.update()
 
         return clean_chunk_item
