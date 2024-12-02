@@ -261,8 +261,10 @@ class ChunksExtractor(dl.BaseServiceRunner):
                     remove_punctuation
                     ]
 
-        with tempfile.NamedTemporaryFile(delete=True, suffix='.txt') as temp_download_file:
-            textfile_path = item.download(local_path=temp_download_file.name)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, item.name)
+            textfile_path = item.download(local_path=file_path, save_locally=True)
+            logger.info(f"Downloaded item to temporary path: {textfile_path}")
 
             # Extract content
             elements = partition_text(filename=textfile_path)

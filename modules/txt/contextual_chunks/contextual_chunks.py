@@ -116,14 +116,14 @@ class ServiceRunner(dl.BaseServiceRunner):
 
             # Upload the file
             if overwrite_chunk is True:
-                original_item.dataset.items.upload(
+                new_item = original_item.dataset.items.upload(
                     local_path=temp_file,
                     remote_name=original_item.name,
                     overwrite=True
                 )
             else:
                 remote_name = f"{Path(original_item.name).stem}_contextual.txt"
-                original_item.dataset.items.upload(
+                new_item = original_item.dataset.items.upload(
                     local_path=temp_file,
                     remote_path=remote_path,
                     remote_name=remote_name,
@@ -135,4 +135,4 @@ class ServiceRunner(dl.BaseServiceRunner):
                     }
                 )
 
-        return item
+        return new_item
