@@ -96,7 +96,7 @@ class ServiceRunner(dl.BaseServiceRunner):
             f"Found {len(assistant_response)} Assistance responses. Taking the first one, and considers it as the "
             f"context for the chunk.")
 
-        original_item_id = item.metadata.get('user', {}).get('original_item_id')
+        original_item_id = item.metadata.get('user', {}).get('txt_chunk_id')
         if original_item_id is None:
             raise dl.exceptions.NotFound(
                 f"Item {item.id} is missing the 'original_item_id' in its metadata. Please add "
