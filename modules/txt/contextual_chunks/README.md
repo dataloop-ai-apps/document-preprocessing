@@ -1,9 +1,8 @@
 # Contextual Chunks Generator Apps
 
-This service handles the createin of contextual chunks of text items.
+This app handles the creation of contextual chunks of text items.
 It generates prompts from a chunk item, to send to a generate model and processes the responses from a model as the
-chunk's context
-to improve search retrieval of chunks within a RAG process. The service is built using Dataloop's sdk and offers
+chunk's context to improve search retrieval of chunks within a RAG process. The service is built using Dataloop's sdk and offers
 functionalities for creating and uploading contextual chunks and their responses.
 
 ## Features
