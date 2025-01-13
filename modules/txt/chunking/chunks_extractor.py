@@ -273,7 +273,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
             for element in elements:
                 element = Text(element.text)
                 element.apply(*cleaners)
-                if element.text != '': # clean_ordered_bullets fails when getting empty string
+                if element.text.split() != []:  # clean_ordered_bullets fails when splitting returns an empty list
                     # Remove alphanumeric bullets from the beginning of text up to three subsection levels.
                     element.text = clean_ordered_bullets(text=element.text)
                 logger.info("Applied cleaning methods")
