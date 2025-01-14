@@ -253,8 +253,8 @@ class ChunksExtractor(dl.BaseServiceRunner):
                     replace_unicode_quotes,
                     # Removes non-ascii characters from a string.
                     clean_non_ascii_chars,
-                    # Remove alphanumeric bullets from the beginning of text up to three subsection levels.
-                    clean_ordered_bullets,
+                    # # Remove alphanumeric bullets from the beginning of text up to three subsection levels.
+                    # clean_ordered_bullets,
                     # Groups together paragraphs that are broken up with line breaks
                     group_broken_paragraphs,
                     # Removes ASCII and unicode punctuation from a string.
@@ -273,6 +273,9 @@ class ChunksExtractor(dl.BaseServiceRunner):
             for element in elements:
                 element = Text(element.text)
                 element.apply(*cleaners)
+                if element.text.split() != []:  # clean_ordered_bullets fails when splitting returns an empty list
+                    # Remove alphanumeric bullets from the beginning of text up to three subsection levels.
+                    element.text = clean_ordered_bullets(text=element.text)
                 logger.info("Applied cleaning methods")
                 if to_correct_spelling is True:
                     spell = Speller(lang='en')
