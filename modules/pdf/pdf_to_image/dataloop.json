@@ -69,16 +69,6 @@
                 }
               ],
               "widget": "dl-input"
-            },
-            {
-              "name": "apply_modality",
-              "title": "apply modality",
-              "props": {
-                "type": "boolean",
-                "title": true,
-                "default": false
-              },
-              "widget": "dl-checkbox"
             }
           ]
         }
