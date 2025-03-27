@@ -13,8 +13,6 @@ This method handles the conversion process:
 2. Downloads the PDF item locally from Dataloop.
 3. Converts each page of the PDF to an image (PNG format).
 4. Uploads the generated images to Dataloop as new image items.
-5. Optionally applies a modality to the first image item to visualize it in place of the original PDF.
-6. Deletes the local temporary files after processing.
 
 #### `convert_pdf_to_image(file_path: str) -> List`
 
