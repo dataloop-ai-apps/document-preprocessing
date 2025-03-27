@@ -2,7 +2,7 @@
   "displayName": "Word to Txt",
   "name": "doc_to_txt",
   "scope": "public",
-  "version": "0.0.51",
+  "version": "0.0.52",
   "description": "An application for converting Word to Txt items",
   "attributes": {
     "Category": "Application",
@@ -19,7 +19,7 @@
   "codebase": {
     "type": "git",
     "gitUrl": "https://github.com/dataloop-ai-apps/document-preprocessing.git",
-    "gitTag": "0.0.51"
+    "gitTag": "0.0.52"
   },
   "components": {
     "computeConfigs": [
