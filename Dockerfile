@@ -14,7 +14,7 @@ RUN pip install -U \
     numpy==1.26.4\
     "unstructured[all-docs]==0.12.0"\
     Spire.Doc==12.7.1\
-    python-pptx==1.0.2
+    python-pptx
 
 
 # docker build --no-cache -t gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.2 -f Dockerfile .
