@@ -1,0 +1,140 @@
+{
+  "displayName": "Process Attachments",
+  "name": "process_attachments_pepsi",
+  "scope": "public",
+  "version": "0.0.52",
+  "description": "An application for processing attachments",
+  "attributes": {
+    "Category": "Application",
+    "Provider": "Dataloop",
+    "Deployed By": "Dataloop",
+    "License": "Apache 2.0",
+    "Application Type": [
+      "Pipeline Node"
+    ],
+    "Media Type": [
+      "All"
+    ]
+  },
+  "components": {
+    "computeConfigs": [
+      {
+        "name": "process-attachments-v2",
+        "runtime": {
+          "podType": "regular-s",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/document-preprocessing:0.1.4",
+          "concurrency": 10,
+          "autoscaler": {
+            "minReplicas": 0,
+            "maxReplicas": 2,
+            "queueLength": 10
+          }
+        }
+      }
+    ],
+    "pipelineNodes": [
+      {
+        "invoke": {
+          "type": "function",
+          "namespace": "process-attachments-v2.process_attachments_v2.process_attachments"
+        },
+        "name": "process_attachments",
+        "categories": [
+          "attachment-utils"
+        ],
+        "displayName": "Process Attachments",
+        "description": "Processing attachments",
+        "scope": "project",
+        "configuration": {
+          "fields": [
+            {
+              "name": "name",
+              "title": "Node Name",
+              "props": {
+                "title": true,
+                "type": "string",
+                "default": "Process-Attachments",
+                "required": true,
+                "placeholder": "Insert node name"
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-input"
+            },
+            {
+              "name": "remote_path_for_processed",
+              "title": "remote path for processed files",
+              "props": {
+                "type": "string",
+                "default": "/processed_attachments",
+                "title": true,
+                "required": true
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-input"
+            },
+            {
+              "name": "save_original",
+              "title": "save original",
+              "props": {
+                "type": "boolean",
+                "title": true,
+                "default": true
+              },
+              "widget": "dl-checkbox"
+            },
+            {
+              "name": "processing_mode",
+              "title": "processing mode",
+              "props": {
+                "type": "string",
+                "title": true,
+                "default": "extract",
+                "enum": ["extract", "convert", "analyze"],
+                "required": true
+              },
+              "widget": "dl-select"
+            }
+          ]
+        }
+      }
+    ],
+    "modules": [
+      {
+        "name": "process_attachments_v2",
+        "computeConfig": "process-attachments-v2",
+        "entryPoint": "modules/attachment/process_attachments/process_attachments.py",
+        "className": "ProcessAttachments",
+        "initInputs": [],
+        "functions": [
+          {
+            "name": "process_attachments",
+            "input": [
+              {
+                "type": "Item",
+                "name": "item"
+              }
+            ],
+            "output": [
+              {
+                "type": "Item[]",
+                "name": "items"
+              }
+            ],
+            "displayIcon": "icon-dl-attach",
+            "displayName": "Process Attachments"
+          }
+        ]
+      }
+    ]
+  }
+} 
