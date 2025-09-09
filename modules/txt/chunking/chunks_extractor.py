@@ -2,12 +2,12 @@ from langchain.text_splitter import CharacterTextSplitter, RecursiveCharacterTex
 from unstructured.cleaners.core import replace_unicode_quotes, clean, clean_non_ascii_chars, \
     clean_ordered_bullets, group_broken_paragraphs, remove_punctuation
 from unstructured.partition.text import partition_text
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from unstructured.documents.elements import Text
 from autocorrect import Speller
-from functools import partial, lru_cache
+from functools import partial
 from pathlib import Path
-from typing import List, Iterator, Optional, Tuple
+from typing import List
 from tqdm import tqdm
 import dtlpy as dl
 import tempfile
@@ -15,9 +15,6 @@ import logging
 import nltk
 import time
 import os
-import psutil
-import re
-from multiprocessing import cpu_count
 
 logger = logging.getLogger('chunks-logger')
 
@@ -25,58 +22,8 @@ logger = logging.getLogger('chunks-logger')
 class ChunksExtractor(dl.BaseServiceRunner):
 
     def __init__(self):
-        # Download NLTK models only once
-        self._ensure_nltk_models()
-        self._optimal_workers = self._calculate_optimal_workers()
-        self._spell_checker_cache = {}
-    
-    @staticmethod
-    def _ensure_nltk_models():
-        """Ensure NLTK models are downloaded (cached after first download)."""
-        try:
-            nltk.data.find('tokenizers/punkt')
-            nltk.data.find('taggers/averaged_perceptron_tagger')
-        except LookupError:
-            nltk.download('averaged_perceptron_tagger', quiet=True)
-            nltk.download('punkt', quiet=True)
-    
-    @staticmethod
-    def _calculate_optimal_workers() -> int:
-        cpu_cores = psutil.cpu_count(logical=False) or 4
-        memory_gb = psutil.virtual_memory().total / (1024**3)
-        
-        if memory_gb > 16:
-            optimal = min(32, cpu_cores * 3)
-        elif memory_gb > 8:
-            optimal = min(24, cpu_cores * 2)
-        elif memory_gb > 4:
-            optimal = min(16, cpu_cores)
-        else:
-            optimal = min(8, max(4, cpu_cores // 2))
-        
-        logger.info(f"Calculated optimal workers for chunking: {optimal}")
-        return optimal
-    
-    @staticmethod
-    def _calculate_process_workers() -> int:
-        cpu_cores = cpu_count()
-        memory_gb = psutil.virtual_memory().total / (1024**3)
-        process_workers = max(2, min(cpu_cores, 12))
-        memory_limit = max(2, int(memory_gb // 2))
-        optimal = min(process_workers, memory_limit)
-        logger.info(f"Calculated process workers for chunking: {optimal}")
-        return optimal
-    
-    @lru_cache(maxsize=2)
-    def _get_spell_checker(self, lang: str = 'en') -> Speller:
-        """Get cached spell checker instance."""
-        return Speller(lang=lang)
-    
-    @staticmethod
-    @lru_cache(maxsize=1)
-    def _get_cached_spell_checker(lang: str = 'en') -> Speller:
-        """Get globally cached spell checker instance."""
-        return Speller(lang=lang)
+        nltk.download('averaged_perceptron_tagger')
+        nltk.download('punkt')
 
     def create_chunks(self, item: dl.Item, context: dl.Context) -> List[dl.Item]:
         """
@@ -107,20 +54,14 @@ class ChunksExtractor(dl.BaseServiceRunner):
                 f"Item id : {item.id} is not txt file. This functions excepts txt only. "
                 f"Use other extracting applications from Marketplace to convert text format to txt")
 
-        # Extract text with memory-efficient streaming for large files
-        file_size_mb = item.size / (1024 * 1024) if item.size else 0
-        
-        if file_size_mb > 100:  # For files larger than 100MB, use streaming
-            logger.info(f"Large file detected ({file_size_mb:.1f}MB), using streaming approach")
-            chunks = self._create_chunks_streaming(item, chunking_strategy, max_chunk_size, chunk_overlap)
-        else:
-            # For smaller files, use the existing approach
-            buffer = item.download(save_locally=False)
-            text = buffer.read().decode('utf-8')
-            chunks = self.chunking_strategy_optimized(text=text,
-                                                     strategy=chunking_strategy,
-                                                     chunk_size=max_chunk_size,
-                                                     chunk_overlap=chunk_overlap)
+        # Extract text
+        buffer = item.download(save_locally=False)
+        text = buffer.read().decode('utf-8')
+
+        chunks = self.chunking_strategy(text=text,
+                                        strategy=chunking_strategy,
+                                        chunk_size=max_chunk_size,
+                                        chunk_overlap=chunk_overlap)
 
         items = self.upload_chunks(chunks=chunks,
                                    item=item,
@@ -131,59 +72,6 @@ class ChunksExtractor(dl.BaseServiceRunner):
                                    )
 
         return items
-
-    def _create_chunks_streaming(self, item: dl.Item, strategy: str, chunk_size: int, chunk_overlap: int) -> List[str]:
-        """
-        Create chunks from large files using streaming to avoid memory issues.
-        """
-        chunks = []
-        
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # Download file locally for streaming
-            local_path = item.download(local_path=temp_dir)
-            
-            # Stream file in chunks to avoid loading entire file into memory
-            with open(local_path, 'r', encoding='utf-8', buffering=8192) as f:
-                if strategy in ['nltk-sentence', 'nltk-paragraphs']:
-                    # For NLTK strategies, we need the full text
-                    # Read in manageable chunks and process
-                    text_buffer = ""
-                    chunk_buffer_size = 10 * 1024 * 1024  # 10MB chunks
-                    
-                    while True:
-                        chunk_data = f.read(chunk_buffer_size)
-                        if not chunk_data:
-                            break
-                        
-                        text_buffer += chunk_data
-                        
-                        # Process when buffer is large enough or at end of file
-                        if len(text_buffer) >= chunk_buffer_size * 2 or len(chunk_data) < chunk_buffer_size:
-                            buffer_chunks = self.chunking_strategy_optimized(
-                                text=text_buffer,
-                                strategy=strategy,
-                                chunk_size=chunk_size,
-                                chunk_overlap=chunk_overlap
-                            )
-                            chunks.extend(buffer_chunks)
-                            
-                            # Keep overlap for next iteration
-                            if chunk_overlap > 0 and buffer_chunks:
-                                text_buffer = buffer_chunks[-1][-chunk_overlap:] if len(buffer_chunks[-1]) > chunk_overlap else ""
-                            else:
-                                text_buffer = ""
-                else:
-                    # For fixed-size and recursive strategies, process the entire file
-                    text = f.read()
-                    chunks = self.chunking_strategy(
-                        text=text,
-                        strategy=strategy,
-                        chunk_size=chunk_size,
-                        chunk_overlap=chunk_overlap
-                    )
-        
-        logger.info(f"Created {len(chunks)} chunks using streaming approach")
-        return chunks
 
     @staticmethod
     def upload_chunks(chunks, item, remote_path_for_chunks, metadata):
@@ -234,102 +122,6 @@ class ChunksExtractor(dl.BaseServiceRunner):
                 chunks_items = [item for item in chunks_items]
 
             return chunks_items
-
-    @staticmethod
-    def chunking_strategy_optimized(text: str, strategy: str, chunk_size: int, chunk_overlap: int) -> List[str]:
-        start_time = time.time()
-        
-        if strategy == 'fixed-size':
-            chunks = []
-            text_len = len(text)
-            
-            for i in range(0, text_len, chunk_size - chunk_overlap):
-                end_pos = min(i + chunk_size, text_len)
-                chunk = text[i:end_pos]
-                if chunk.strip():  # Only add non-empty chunks
-                    chunks.append(chunk)
-                
-                if end_pos >= text_len:
-                    break
-            
-        elif strategy == 'recursive':
-            # Native recursive chunking with optimized separators
-            chunks = ChunksExtractor._recursive_split_optimized(text, chunk_size, chunk_overlap)
-            
-        elif strategy == 'nltk-sentence':
-            # Optimized sentence tokenization
-            try:
-                chunks = nltk.sent_tokenize(text)
-            except Exception:
-                # Fallback to regex-based sentence splitting
-                chunks = re.split(r'[.!?]+\s+', text)
-                chunks = [chunk.strip() for chunk in chunks if chunk.strip()]
-            
-        elif strategy == 'nltk-paragraphs':
-            # Optimized paragraph tokenization
-            try:
-                chunks = nltk.tokenize.blankline_tokenize(text)
-            except Exception:
-                # Fallback to regex-based paragraph splitting
-                chunks = re.split(r'\n\s*\n', text)
-                chunks = [chunk.strip() for chunk in chunks if chunk.strip()]
-        else:
-            # All text as 1 chunk
-            chunks = [text] if text.strip() else []
-        
-        processing_time = time.time() - start_time
-        logger.debug(f"OPTIMIZED chunking ({strategy}): {len(chunks)} chunks in {processing_time:.3f}s")
-        
-        return chunks
-    
-    @staticmethod
-    def _recursive_split_optimized(text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
-        """
-        Optimized recursive text splitting using native string operations.
-        Much faster than langchain's RecursiveCharacterTextSplitter.
-        """
-        if len(text) <= chunk_size:
-            return [text] if text.strip() else []
-        
-        # Optimized separator hierarchy
-        separators = ['\n\n', '\n', '. ', '! ', '? ', '; ', ': ', ', ', ' ', '']
-        
-        def split_text_recursive(text_chunk: str, sep_index: int = 0) -> List[str]:
-            if len(text_chunk) <= chunk_size:
-                return [text_chunk] if text_chunk.strip() else []
-            
-            if sep_index >= len(separators):
-                # Force split if no separator works
-                return [text_chunk[i:i+chunk_size] for i in range(0, len(text_chunk), chunk_size - chunk_overlap)]
-            
-            separator = separators[sep_index]
-            splits = text_chunk.split(separator) if separator else list(text_chunk)
-            
-            result_chunks = []
-            current_chunk = ""
-            
-            for split in splits:
-                test_chunk = current_chunk + (separator if current_chunk else "") + split
-                
-                if len(test_chunk) <= chunk_size:
-                    current_chunk = test_chunk
-                else:
-                    if current_chunk:
-                        result_chunks.append(current_chunk)
-                    
-                    if len(split) > chunk_size:
-                        # Recursively split large pieces
-                        result_chunks.extend(split_text_recursive(split, sep_index + 1))
-                        current_chunk = ""
-                    else:
-                        current_chunk = split
-            
-            if current_chunk:
-                result_chunks.append(current_chunk)
-            
-            return result_chunks
-        
-        return split_text_recursive(text)
 
     @staticmethod
     def chunking_strategy(text: str, strategy: str, chunk_size: int, chunk_overlap: int) -> List[str]:
@@ -412,35 +204,18 @@ class ChunksExtractor(dl.BaseServiceRunner):
         ################################################
 
         tic = time.time()
-        
-        # Use optimized worker count instead of hardcoded 32
-        max_workers = min(self._optimal_workers, len(items), 16)  # Cap at 16 for stability
-        logger.info(f"Processing {len(items)} chunks with {max_workers} workers")
-        
-        # Process in batches to avoid overwhelming the system
-        batch_size = max(10, len(items) // max_workers) if len(items) > 50 else len(items)
-        results = []
-        
-        with tqdm(total=len(items), desc='Processing chunks') as pbar:
-            for batch_start in range(0, len(items), batch_size):
-                batch_end = min(batch_start + batch_size, len(items))
-                batch_items = items[batch_start:batch_end]
-                
-                # Process current batch
-                with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                    futures = []
-                    for item in batch_items:
-                        kwargs = {'pbar': pbar,
-                                  'item': item,
-                                  'to_correct_spelling': to_correct_spelling,
-                                  "remote_path_for_clean_chunks": remote_path_for_clean_chunks
-                                  }
-                        future = executor.submit(self.clean_chunk, **kwargs)
-                        futures.append(future)
-                    
-                    # Collect batch results
-                    batch_results = [future.result() for future in futures]
-                    results.extend(batch_results)
+        futures = list()
+        with (ThreadPoolExecutor(max_workers=32) as executor):
+            with tqdm(total=len(items), desc='Processing') as pbar:
+                for item in items:
+                    kwargs = {'pbar': pbar,
+                              'item': item,
+                              'to_correct_spelling': to_correct_spelling,
+                              "remote_path_for_clean_chunks": remote_path_for_clean_chunks
+                              }
+                    future = executor.submit(self.clean_chunk, **kwargs)
+                    futures.append(future)
+        results = [future.result() for future in futures]
 
         logger.info('Using threads took {:.2f}[s]'.format(time.time() - tic))
 
@@ -501,13 +276,12 @@ class ChunksExtractor(dl.BaseServiceRunner):
                 if element.text.split() != []:  # clean_ordered_bullets fails when splitting returns an empty list
                     # Remove alphanumeric bullets from the beginning of text up to three subsection levels.
                     element.text = clean_ordered_bullets(text=element.text)
-                logger.debug("Applied cleaning methods")
+                logger.info("Applied cleaning methods")
                 if to_correct_spelling is True:
-                    # Use cached spell checker instance
-                    spell = ChunksExtractor._get_cached_spell_checker()
+                    spell = Speller(lang='en')
                     clean_text = spell(element.text)
-                    text += clean_text + ' '
-                    logger.debug("Applied autocorrect spelling")
+                    text += clean_text + ''
+                    logger.info("Applied autocorrect spelling")
                 else:
                     text += element.text + ' '
 
