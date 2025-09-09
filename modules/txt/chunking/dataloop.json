@@ -2,7 +2,7 @@
   "displayName": "Text Chunk Generator",
   "name": "txt_to_chunks",
   "scope": "public",
-  "version": "0.0.52",
+  "version": "0.0.53",
   "description": "This app provide processes of large text files by splitting them into smaller, manageable chunks based on specified parameters (size, overlap, and strategy) and uploads each chunk as a separate item in Dataloop, enabling easier handling and analysis of large documents.",
   "attributes": {
     "Category": "Application",
@@ -19,7 +19,7 @@
   "codebase": {
     "type": "git",
     "gitUrl": "https://github.com/dataloop-ai-apps/document-preprocessing.git",
-    "gitTag": "0.0.52"
+    "gitTag": "0.0.53"
   },
   "components": {
     "computeConfigs": [
