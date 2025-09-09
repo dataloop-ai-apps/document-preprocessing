@@ -62,27 +62,27 @@ class PdfExtractor(dl.BaseServiceRunner):
         Returns:
             list: A list of paths to the generated .txt files, each corresponding to a page in the PDF.
         """
-        open_file = open(pdf_path, 'rb')
-        pdf_reader = pypdf.PdfReader(open_file)
-        logger.info(f"PDF metadata: {pdf_reader.metadata}")
+        # Use context manager to ensure file is properly closed
+        with open(pdf_path, 'rb') as open_file:
+            pdf_reader = pypdf.PdfReader(open_file)
+            logger.info(f"PDF metadata: {pdf_reader.metadata}")
 
-        total_pages = len(pdf_reader.pages)
-        text_files = []
+            total_pages = len(pdf_reader.pages)
+            text_files = []
 
-        # Loop through each page and save text to individual .txt files
-        for page_num in range(total_pages):
-            page = pdf_reader.pages[page_num]
-            page_text = page.extract_text()
+            # Loop through each page and save text to individual .txt files
+            for page_num in range(total_pages):
+                page = pdf_reader.pages[page_num]
+                page_text = page.extract_text()
 
-            # Define the output path for each page's text
-            new_item_path = f'{os.path.splitext(pdf_path)[0]}_page_{page_num + 1}.txt'
-            with open(new_item_path, 'w', encoding='utf-8') as f:
-                f.write(page_text)
+                # Define the output path for each page's text
+                new_item_path = f'{os.path.splitext(pdf_path)[0]}_page_{page_num + 1}.txt'
+                with open(new_item_path, 'w', encoding='utf-8') as f:
+                    f.write(page_text)
 
-            # Add the file path to the list of text files
-            text_files.append(new_item_path)
+                # Add the file path to the list of text files
+                text_files.append(new_item_path)
 
-        open_file.close()
         return text_files
 
     @staticmethod
@@ -96,31 +96,32 @@ class PdfExtractor(dl.BaseServiceRunner):
         Returns:
             list: A list of paths to the saved image files extracted from the PDF.
         """
-        pdf_file = fitz.open(pdf_path)
-        images_paths = list()
-        # iterate over PDF pages
-        for page_index in range(len(pdf_file)):
+        # Use context manager to ensure PDF document is properly closed
+        with fitz.open(pdf_path) as pdf_file:
+            images_paths = list()
+            # iterate over PDF pages
+            for page_index in range(len(pdf_file)):
 
-            page = pdf_file.load_page(page_index)  # load the page
-            image_list = page.get_images(full=True)  # get images on the page
+                page = pdf_file.load_page(page_index)  # load the page
+                image_list = page.get_images(full=True)  # get images on the page
 
-            if image_list:
-                logger.info(f"Found a total of {len(image_list)} images on page {page_index}")
-            else:
-                logger.info("No images found on page", page_index)
+                if image_list:
+                    logger.info(f"Found a total of {len(image_list)} images on page {page_index}")
+                else:
+                    logger.info("No images found on page", page_index)
 
-            for image_index, img in enumerate(image_list, start=1):
-                # get the cross-reference number of the image object in the PDF (xref - the PDF reader way to locate and access various objects).
-                xref = img[0]
+                for image_index, img in enumerate(image_list, start=1):
+                    # get the cross-reference number of the image object in the PDF (xref - the PDF reader way to locate and access various objects).
+                    xref = img[0]
 
-                base_image = pdf_file.extract_image(xref)
-                image_bytes, image_ext = base_image["image"], base_image["ext"]
+                    base_image = pdf_file.extract_image(xref)
+                    image_bytes, image_ext = base_image["image"], base_image["ext"]
 
-                # save the image
-                image_name = f'{os.path.splitext(pdf_path)[0]}_page_{page_index + 1}.{image_ext}'
-                with open(image_name, "wb") as image_file:
-                    image_file.write(image_bytes)
-                    images_paths.append(image_name)
-                    logger.info(f"Image saved as {image_name}")
+                    # save the image
+                    image_name = f'{os.path.splitext(pdf_path)[0]}_page_{page_index + 1}.{image_ext}'
+                    with open(image_name, "wb") as image_file:
+                        image_file.write(image_bytes)
+                        images_paths.append(image_name)
+                        logger.info(f"Image saved as {image_name}")
 
         return images_paths

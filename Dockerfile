@@ -16,5 +16,5 @@ RUN pip install -U \
     Spire.Doc==12.7.1
 
 
-# docker build --no-cache -t gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.2 -f Dockerfile .
-# docker push gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.2
+# docker build --no-cache -t gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.3 -f Dockerfile .
+# docker push gcr.io/viewo-g/piper/agent/runner/cpu/document-preprocessing:0.1.3

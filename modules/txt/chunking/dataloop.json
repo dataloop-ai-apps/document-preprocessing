@@ -26,13 +26,13 @@
       {
         "name": "chunks-v2-service",
         "runtime": {
-          "podType": "regular-s",
+          "podType": "regular-m",
           "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/document-preprocessing:0.1.3",
-          "concurrency": 10,
+          "concurrency": 25,
           "autoscaler": {
             "minReplicas": 0,
-            "maxReplicas": 2,
-            "queueLength": 10
+            "maxReplicas": 10,
+            "queueLength": 100
           }
         }
       }
