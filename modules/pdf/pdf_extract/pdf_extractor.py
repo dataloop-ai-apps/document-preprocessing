@@ -1,5 +1,5 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Tuple
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+from typing import List, Tuple, Optional
 import dtlpy as dl
 import tempfile
 import logging
@@ -7,11 +7,39 @@ import pypdf
 import fitz
 import os
 import gc
+import psutil
+import mmap
+from multiprocessing import cpu_count
+import time
 
 logger = logging.getLogger('pdf-to-text-logger')
 
 
 class PdfExtractor(dl.BaseServiceRunner):
+    
+    def __init__(self):
+        super().__init__()
+        self._optimal_workers = self._calculate_optimal_workers()
+    
+    @staticmethod
+    def _calculate_optimal_workers() -> int:
+        cpu_cores = psutil.cpu_count(logical=False) or 4
+        memory_gb = psutil.virtual_memory().total / (1024**3)
+        cpu_workers = max(2, min(cpu_cores, 32))
+        memory_workers = max(2, int(memory_gb // 1))
+        optimal = min(cpu_workers, memory_workers)
+        logger.info(f"Calculated optimal workers: {optimal}")
+        return optimal
+    
+    @staticmethod
+    def _calculate_process_workers() -> int:
+        cpu_cores = cpu_count()
+        memory_gb = psutil.virtual_memory().total / (1024**3)
+        process_workers = max(2, min(cpu_cores // 2, 8))
+        memory_limit = max(2, int(memory_gb // 4))
+        optimal = min(process_workers, memory_limit)
+        logger.info(f"Calculated process workers: {optimal}")
+        return optimal
 
     def pdf_extraction(self, item: dl.Item, context: dl.Context) -> List[dl.Item]:
         """
@@ -32,12 +60,16 @@ class PdfExtractor(dl.BaseServiceRunner):
             try:
                 item_local_path = item.download(local_path=temp_dir)
                 
-                # Extract text from PDF with optimized memory management
-                new_items_path = self.extract_text_from_pdf(pdf_path=item_local_path)
+                new_items_path = self.extract_text_from_pdf_optimized(
+                    pdf_path=item_local_path, 
+                    max_workers=self._optimal_workers
+                )
                 
                 if extract_images is True:
-                    # Extract images with optimized memory management
-                    new_images_path = self.extract_images_from_pdf(pdf_path=item_local_path)
+                    new_images_path = self.extract_images_from_pdf(
+                        pdf_path=item_local_path,
+                        max_workers=self._optimal_workers
+                    )
                     new_items_path.extend(new_images_path)
                 
                 # Upload all items
@@ -70,10 +102,117 @@ class PdfExtractor(dl.BaseServiceRunner):
         return all_items
 
     @staticmethod
+    def extract_text_from_pdf_optimized(pdf_path: str, max_workers: int = 4) -> List[str]:
+        text_files = []
+        start_time = time.time()
+        
+        try:
+            with open(pdf_path, 'rb') as pdf_file:
+                try:
+                    with mmap.mmap(pdf_file.fileno(), 0, access=mmap.ACCESS_READ) as mmapped_file:
+                        pdf_reader = pypdf.PdfReader(mmapped_file)
+                        logger.info(f"Using memory-mapped I/O")
+                except (OSError, ValueError):
+                    pdf_reader = pypdf.PdfReader(pdf_file)
+                    logger.info(f"Using standard I/O")
+                
+                total_pages = len(pdf_reader.pages)
+                logger.info(f"Processing {total_pages} pages with {max_workers} workers (OPTIMIZED)")
+                
+                # Adaptive batch sizing with more aggressive settings
+                available_memory_gb = psutil.virtual_memory().available / (1024**3)
+                
+                if total_pages <= 20:
+                    batch_size = total_pages  # Small PDFs: process all at once
+                elif available_memory_gb > 8:
+                    batch_size = min(100, max(20, total_pages // 2))  # Large memory: much bigger batches
+                elif available_memory_gb > 4:
+                    batch_size = min(50, max(10, total_pages // 4))   # Medium memory: bigger batches
+                else:
+                    batch_size = min(25, max(5, total_pages // 8))    # Limited memory: moderate batches
+                
+                logger.info(f"Using aggressive batch size: {batch_size} (Available memory: {available_memory_gb:.1f}GB)")
+                
+                def process_page_optimized(page_num: int) -> Tuple[int, str, Optional[str]]:
+                    """Optimized page processing with immediate cleanup."""
+                    try:
+                        page = pdf_reader.pages[page_num]
+                        page_text = page.extract_text()
+                        
+                        # Immediate cleanup to free memory
+                        del page
+                        
+                        return page_num, page_text, None
+                    except Exception as e:
+                        return page_num, "", str(e)
+                
+                # Process pages in optimized batches with ProcessPoolExecutor for CPU-bound work
+                processed_pages = 0
+                
+                # Use ProcessPoolExecutor for true parallelism (not limited by GIL)
+                with ProcessPoolExecutor(max_workers=min(max_workers, 8)) as process_executor:
+                    for batch_start in range(0, total_pages, batch_size):
+                        batch_end = min(batch_start + batch_size, total_pages)
+                        batch_pages = list(range(batch_start, batch_end))
+                        
+                        # Submit batch to process pool
+                        futures = {process_executor.submit(process_page_optimized, page_num): page_num 
+                                 for page_num in batch_pages}
+                        
+                        # Collect results with timeout handling
+                        batch_results = []
+                        for future in as_completed(futures, timeout=300):  # 5 minute timeout per page
+                            try:
+                                page_num, page_text, error = future.result()
+                                
+                                if error:
+                                    logger.warning(f"Skipping page {page_num + 1} due to error: {error}")
+                                    continue
+                                    
+                                batch_results.append((page_num, page_text))
+                            except Exception as e:
+                                logger.error(f"Failed to process page: {str(e)}")
+                        
+                        # Sort results by page number to maintain order
+                        batch_results.sort(key=lambda x: x[0])
+                        
+                        # Batch write operations for better I/O performance
+                        batch_files = []
+                        for page_num, page_text in batch_results:
+                            new_item_path = f'{os.path.splitext(pdf_path)[0]}_page_{page_num + 1}.txt'
+                            batch_files.append((new_item_path, page_text))
+                        
+                        # Write all files in batch
+                        for file_path, content in batch_files:
+                            try:
+                                with open(file_path, 'w', encoding='utf-8', buffering=8192) as f:
+                                    f.write(content)
+                                text_files.append(file_path)
+                                processed_pages += 1
+                            except IOError as e:
+                                logger.error(f"Failed to write {file_path}: {str(e)}")
+                        
+                        # Log progress and cleanup
+                        logger.info(f"Processed batch {batch_start//batch_size + 1}: {processed_pages}/{total_pages} pages")
+                        gc.collect()
+                
+                processing_time = time.time() - start_time
+                logger.info(f"OPTIMIZED: Successfully extracted text from {len(text_files)} pages in {processing_time:.2f}s")
+                logger.info(f"OPTIMIZED: Throughput: {len(text_files)/processing_time:.2f} pages/second")
+                
+        except Exception as e:
+            logger.error(f"Failed to process PDF with optimization: {str(e)}")
+            # Fallback to original method
+            logger.info("Falling back to original extraction method")
+            return PdfExtractor.extract_text_from_pdf(pdf_path, max_workers)
+        
+        return text_files
+
+    @staticmethod
     def extract_text_from_pdf(pdf_path: str, max_workers: int = 4) -> List[str]:
         """
         Extracts text from a PDF file and saves each page as a separate .txt file.
-        Optimized for performance and memory efficiency.
+        Optimized for performance and memory efficiency with adaptive batching.
 
         Args:
             pdf_path (str): The path to the PDF file to be processed.
@@ -91,10 +230,19 @@ class PdfExtractor(dl.BaseServiceRunner):
                 logger.info(f"PDF metadata: {pdf_reader.metadata}")
                 
                 total_pages = len(pdf_reader.pages)
-                logger.info(f"Processing {total_pages} pages from PDF")
+                logger.info(f"Processing {total_pages} pages from PDF with {max_workers} workers")
                 
-                # Process pages in batches to optimize memory usage
-                batch_size = min(10, total_pages)  # Process up to 10 pages at a time
+                # Adaptive batch sizing based on total pages and available memory
+                available_memory_gb = psutil.virtual_memory().available / (1024**3)
+                
+                if total_pages <= 50:
+                    batch_size = total_pages  # Small PDFs: process all at once
+                elif available_memory_gb > 4:
+                    batch_size = min(50, max(10, total_pages // 4))  # Large memory: bigger batches
+                else:
+                    batch_size = min(20, max(5, total_pages // 8))   # Limited memory: smaller batches
+                
+                logger.info(f"Using adaptive batch size: {batch_size} (Available memory: {available_memory_gb:.1f}GB)")
                 
                 def process_page(page_num: int) -> Tuple[int, str, str]:
                     """Process a single page and return its content."""
@@ -110,41 +258,47 @@ class PdfExtractor(dl.BaseServiceRunner):
                         logger.error(f"Error processing page {page_num + 1}: {str(e)}")
                         return page_num, "", str(e)
                 
-                # Process pages concurrently with thread pool
-                with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                    # Submit all page processing tasks
-                    futures = []
-                    for page_num in range(total_pages):
-                        future = executor.submit(process_page, page_num)
-                        futures.append(future)
+                # Process pages in optimized batches
+                processed_pages = 0
+                
+                for batch_start in range(0, total_pages, batch_size):
+                    batch_end = min(batch_start + batch_size, total_pages)
+                    batch_pages = list(range(batch_start, batch_end))
+                    
+                    # Process current batch concurrently
+                    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                        # Submit batch processing tasks
+                        futures = {executor.submit(process_page, page_num): page_num 
+                                 for page_num in batch_pages}
                         
-                        # Process in batches to control memory
-                        if len(futures) >= batch_size or page_num == total_pages - 1:
-                            # Wait for batch to complete
-                            for future in as_completed(futures):
-                                page_num, page_text, error = future.result()
-                                
-                                if error:
-                                    logger.warning(f"Skipping page {page_num + 1} due to error: {error}")
-                                    continue
-                                
-                                # Write text to file
-                                new_item_path = f'{os.path.splitext(pdf_path)[0]}_page_{page_num + 1}.txt'
-                                try:
-                                    with open(new_item_path, 'w', encoding='utf-8') as f:
-                                        f.write(page_text)
-                                    text_files.append(new_item_path)
-                                    
-                                    if (page_num + 1) % 10 == 0:
-                                        logger.info(f"Processed {page_num + 1}/{total_pages} pages")
-                                except IOError as e:
-                                    logger.error(f"Failed to write page {page_num + 1}: {str(e)}")
+                        # Collect results as they complete
+                        batch_results = []
+                        for future in as_completed(futures):
+                            page_num, page_text, error = future.result()
                             
-                            # Clear futures list for next batch
-                            futures.clear()
-                            
-                            # Force garbage collection after each batch
-                            gc.collect()
+                            if error:
+                                logger.warning(f"Skipping page {page_num + 1} due to error: {error}")
+                                continue
+                                
+                            batch_results.append((page_num, page_text))
+                        
+                        # Sort results by page number to maintain order
+                        batch_results.sort(key=lambda x: x[0])
+                        
+                        # Write all batch results to files
+                        for page_num, page_text in batch_results:
+                            new_item_path = f'{os.path.splitext(pdf_path)[0]}_page_{page_num + 1}.txt'
+                            try:
+                                with open(new_item_path, 'w', encoding='utf-8') as f:
+                                    f.write(page_text)
+                                text_files.append(new_item_path)
+                                processed_pages += 1
+                            except IOError as e:
+                                logger.error(f"Failed to write page {page_num + 1}: {str(e)}")
+                    
+                    # Log progress and cleanup after each batch
+                    logger.info(f"Processed batch {batch_start//batch_size + 1}: {processed_pages}/{total_pages} pages")
+                    gc.collect()
                 
                 logger.info(f"Successfully extracted text from {len(text_files)} pages")
                 
