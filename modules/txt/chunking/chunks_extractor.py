@@ -15,9 +15,9 @@ import logging
 import nltk
 import time
 import os
+import io
 
-logger = logging.getLogger('chunks-logger')
-
+logger = logging.getLogger('[CHUNKS-EXTRACTOR]')
 
 class ChunksExtractor(dl.BaseServiceRunner):
 
@@ -43,6 +43,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
         Returns:
             List[dl.Item]: A list of Dataloop items, each representing a chunk of the original text file.
         """
+        tic = time.time()
         node = context.node
         chunking_strategy = node.metadata['customNodeConfig']['chunking_strategy']
         max_chunk_size = node.metadata['customNodeConfig']['max_chunk_size']
@@ -57,12 +58,13 @@ class ChunksExtractor(dl.BaseServiceRunner):
         # Extract text
         buffer = item.download(save_locally=False)
         text = buffer.read().decode('utf-8')
-
+        chunk_tic = time.time()
         chunks = self.chunking_strategy(text=text,
                                         strategy=chunking_strategy,
                                         chunk_size=max_chunk_size,
                                         chunk_overlap=chunk_overlap)
-
+        logger.info(f"Time taken to chunk: {time.time() - chunk_tic} seconds")
+        upload_tic = time.time()
         items = self.upload_chunks(chunks=chunks,
                                    item=item,
                                    remote_path_for_chunks=remote_path_for_chunks,
@@ -70,7 +72,9 @@ class ChunksExtractor(dl.BaseServiceRunner):
                                              'user': {'extracted_chunk': True,
                                                       'original_item_id': item.id}}
                                    )
-
+        logger.info(f"Time taken to upload: {time.time() - upload_tic} seconds")
+        logger.info(f"Number of chunks: {len(items)}")
+        logger.info(f"Total time taken: {time.time() - tic} seconds")
         return items
 
     @staticmethod
@@ -94,34 +98,33 @@ class ChunksExtractor(dl.BaseServiceRunner):
             dl.PlatformException: If no items were uploaded successfully.
         """
 
-        chunks_paths = []
-        with tempfile.TemporaryDirectory() as temp_dir:
-            for ind, chunk in enumerate(chunks):
-                base_name = item.name
-                chunk_filename = f"{os.path.splitext(base_name)[0]}-{ind}.txt"
-                chunk_path = os.path.join(temp_dir, chunk_filename)
+        binaries = []
+        for ind, chunk in enumerate(chunks):
+            base_name = item.name
+            chunk_filename = f"{os.path.splitext(base_name)[0]}-{ind}.txt"
+            bin = io.BytesIO(chunk.encode('utf-8'))   
+            bin.name =  chunk_filename
+            bin.seek(0)
+            binaries.append(bin)
 
-                with open(chunk_path, 'w', encoding='utf-8') as f:
-                    f.write(chunk)
-                chunks_paths.append(chunk_path)
+        # Uploading all chunk items - bulk
+        chunks_items = item.dataset.items.upload(local_path=binaries,
+                                                remote_path=remote_path_for_chunks,
+                                                item_metadata=metadata,
+                                                overwrite=True
+                                                    )
 
-            # Uploading all chunk items - bulk
-            chunks_items = item.dataset.items.upload(local_path=chunks_paths,
-                                                     remote_path=remote_path_for_chunks,
-                                                     item_metadata=metadata
-                                                     )
+        # raise if none
+        if chunks_items is None:
+            raise dl.PlatformException(f"No items was uploaded! local paths: {binaries}")
 
-            # raise if none
-            if chunks_items is None:
-                raise dl.PlatformException(f"No items was uploaded! local paths: {chunks_paths}")
+        elif isinstance(chunks_items, dl.Item):
+            chunks_items = [chunks_items]
 
-            elif isinstance(chunks_items, dl.Item):
-                chunks_items = [chunks_items]
+        else:
+            chunks_items = [item for item in chunks_items]
 
-            else:
-                chunks_items = [item for item in chunks_items]
-
-            return chunks_items
+        return chunks_items
 
     @staticmethod
     def chunking_strategy(text: str, strategy: str, chunk_size: int, chunk_overlap: int) -> List[str]:
@@ -296,6 +299,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
             original_id = item.metadata.get('user', dict()).get('original_item_id', None)
             clean_chunk_item = item.dataset.items.upload(local_path=temp_file_path,
                                                          remote_path=remote_path_for_clean_chunks,
+                                                         overwrite=True,
                                                          item_metadata={
                                                              'user': {'clean_chunk': True,
                                                                       'original_item_id': original_id,
@@ -303,3 +307,26 @@ class ChunksExtractor(dl.BaseServiceRunner):
         pbar.update()
 
         return clean_chunk_item
+
+
+
+
+if __name__ == "__main__":
+    dl.setenv('prod')
+    from collections import namedtuple
+    chunking_strategy = 'fixed-size'
+    max_chunk_size = 1000
+    chunk_overlap = 100
+    remote_path_for_chunks = "/chunks"
+
+  
+    context = namedtuple('Context', ['node'])
+    context.node = namedtuple('Node', ['metadata'])
+    context.node.metadata = {"customNodeConfig": {"chunking_strategy": chunking_strategy, "max_chunk_size": max_chunk_size, "chunk_overlap": chunk_overlap, "remote_path_for_chunks": remote_path_for_chunks}}
+    item = dl.items.get(item_id="68c27eb9c34dd098e324671b")
+    extractor = ChunksExtractor()
+    tic = time.time()
+    output = extractor.create_chunks(item=item, context=context)
+    print(f"Time taken: {time.time() - tic} seconds")
+    print(f"Number of chunks: {len(output)}")
+    _ = [print(i.url) for i in list(output)]
