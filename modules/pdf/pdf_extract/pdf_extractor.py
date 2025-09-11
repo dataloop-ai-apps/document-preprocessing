@@ -125,3 +125,20 @@ class PdfExtractor(dl.BaseServiceRunner):
                         logger.info(f"Image saved as {image_name}")
 
         return images_paths
+
+
+
+if __name__ == "__main__":
+    dl.setenv('prod')
+    from collections import namedtuple
+    extract_images = False
+    remote_path_for_extractions = "/extracted_from_pdfs"
+
+  
+    context = namedtuple('Context', ['node'])
+    context.node = namedtuple('Node', ['metadata'])
+    context.node.metadata = {"customNodeConfig": {"extract_images": extract_images, "remote_path_for_extractions": remote_path_for_extractions}}
+    item = dl.items.get(item_id="68c1a2d73415011b26e1606f")
+    extractor = PdfExtractor()
+    output = extractor.pdf_extraction(item=item, context=context)
+    print(output)
