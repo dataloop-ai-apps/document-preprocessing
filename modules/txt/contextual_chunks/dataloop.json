@@ -2,7 +2,7 @@
   "displayName": "Contextual Chunks Generator",
   "name": "contextual_chunks",
   "scope": "public",
-  "version": "0.0.55",
+  "version": "0.0.56",
   "description": "This app provide processes of large text files by splitting them into smaller, manageable chunks based on specified parameters (size, overlap, and strategy) and uploads each chunk as a separate item in Dataloop, enabling easier handling and analysis of large documents.",
   "attributes": {
     "Category": "Application",
@@ -19,7 +19,7 @@
   "codebase": {
     "type": "git",
     "gitUrl": "dataloopai/dtlpy-agent:cpu.py3.10.opencv",
-    "gitTag": "0.0.55"
+    "gitTag": "0.0.56"
   },
   "components": {
     "computeConfigs": [
