@@ -54,36 +54,27 @@ class PdfExtractor(dl.BaseServiceRunner):
     @staticmethod
     def extract_text_from_pdf(pdf_path: str) -> List[str]:
         """
-        Extracts text from a PDF file and saves each page as a separate .txt file.
+        Extracts text from a PDF file and saves it as a single .txt file.
 
         Args:
             pdf_path (str): The path to the PDF file to be processed.
 
         Returns:
-            list: A list of paths to the generated .txt files, each corresponding to a page in the PDF.
+            list: A list containing the path to the generated .txt file.
         """
-        # Use context manager to ensure file is properly closed
         with open(pdf_path, 'rb') as open_file:
             pdf_reader = pypdf.PdfReader(open_file)
             logger.info(f"PDF metadata: {pdf_reader.metadata}")
 
-            total_pages = len(pdf_reader.pages)
-            text_files = []
+            text_parts = []
+            for page in pdf_reader.pages:
+                text_parts.append(page.extract_text())
 
-            # Loop through each page and save text to individual .txt files
-            for page_num in range(total_pages):
-                page = pdf_reader.pages[page_num]
-                page_text = page.extract_text()
+            new_item_path = f'{os.path.splitext(pdf_path)[0]}.txt'
+            with open(new_item_path, 'w', encoding='utf-8') as f:
+                f.write('\n\n'.join(text_parts))
 
-                # Define the output path for each page's text
-                new_item_path = f'{os.path.splitext(pdf_path)[0]}_page_{page_num + 1}.txt'
-                with open(new_item_path, 'w', encoding='utf-8') as f:
-                    f.write(page_text)
-
-                # Add the file path to the list of text files
-                text_files.append(new_item_path)
-
-        return text_files
+        return [new_item_path]
 
     @staticmethod
     def extract_images_from_pdf(pdf_path) -> List:
