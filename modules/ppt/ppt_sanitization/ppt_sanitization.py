@@ -164,8 +164,12 @@ class RemoveSensitiveText(dl.BaseServiceRunner):
         # Save the new presentation
         new_item_path = os.path.join(data_dir, f'{element}_sanitized_{item.name}')
         new_prs.save(new_item_path)
-        new_item = item.dataset.items.upload(local_path=new_item_path,
-                                             remote_path='/no_theme')
+        new_item = item.dataset.items.upload(
+            local_path=new_item_path,
+            remote_path="/no_theme",
+            overwrite=True,
+            raise_on_error=True,
+        )
         shutil.rmtree(data_dir)
         return new_item
 

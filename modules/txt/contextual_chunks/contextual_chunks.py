@@ -42,9 +42,15 @@ class ServiceRunner(dl.BaseServiceRunner):
                                         chunk_text=chunk_text,
                                         prompt_item_name=item.name)
 
-        prompt_item = item.dataset.items.upload(p_item, remote_path=remote_path,
-                                                item_metadata={'user': {'txt_chunk_id': item.id,
-                                                                        'original_item_id': original_item_id}})
+        prompt_item = item.dataset.items.upload(
+            p_item,
+            remote_path=remote_path,
+            item_metadata={
+                "user": {"txt_chunk_id": item.id, "original_item_id": original_item_id}
+            },
+            overwrite=True,
+            raise_on_error=True,
+        )
 
         return prompt_item
 
@@ -119,7 +125,8 @@ class ServiceRunner(dl.BaseServiceRunner):
                 new_item = original_item.dataset.items.upload(
                     local_path=temp_file,
                     remote_name=original_item.name,
-                    overwrite=True
+                    overwrite=True,
+                    raise_on_error=True,
                 )
             else:
                 remote_name = f"{Path(original_item.name).stem}_contextual.txt"
@@ -128,11 +135,12 @@ class ServiceRunner(dl.BaseServiceRunner):
                     remote_path=remote_path,
                     remote_name=remote_name,
                     item_metadata={
-                        'user': {
-                            'original_item_id': original_item_id,
-                            'chunk_id': item.id
+                        "user": {
+                            "original_item_id": original_item_id,
+                            "chunk_id": item.id,
                         }
-                    }
+                    },
+                    raise_on_error=True,
                 )
 
         return new_item

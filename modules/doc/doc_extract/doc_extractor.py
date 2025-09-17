@@ -58,11 +58,15 @@ class DocExtractor(dl.BaseServiceRunner):
                 temp_text_file.write(text)
             logger.info(f"Text saved to temporary file: {output_path}")
 
-            new_item = item.dataset.items.upload(local_path=output_path,
-                                                 remote_path=remote_path_for_extractions,
-                                                 item_metadata={
-                                                     'user': {'extracted_from_docs': True,
-                                                              'original_item_id': item.id}})
+            new_item = item.dataset.items.upload(
+                local_path=output_path,
+                remote_path=remote_path_for_extractions,
+                item_metadata={
+                    "user": {"extracted_from_docs": True, "original_item_id": item.id}
+                },
+                overwrite=True,
+                raise_on_error=True,
+            )
 
             if new_item is None:
                 raise dl.PlatformException(f"No items was uploaded! local paths: {output_path}")

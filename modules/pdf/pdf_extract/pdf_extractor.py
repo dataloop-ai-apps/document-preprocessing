@@ -35,12 +35,15 @@ class PdfExtractor(dl.BaseServiceRunner):
                 new_images_path = self.extract_images_from_pdf(pdf_path=item_local_path)
                 new_items_path.extend(new_images_path)
 
-            new_items = item.dataset.items.upload(local_path=new_items_path,
-                                                  remote_path=remote_path_for_extractions,
-                                                  item_metadata={
-                                                      'user': {'extracted_from_pdf': True,
-                                                               'original_item_id': item.id}},
-                                                  overwrite=True)
+            new_items = item.dataset.items.upload(
+                local_path=new_items_path,
+                remote_path=remote_path_for_extractions,
+                item_metadata={
+                    "user": {"extracted_from_pdf": True, "original_item_id": item.id}
+                },
+                overwrite=True,
+                raise_on_error=True,
+            )
 
             if new_items is None:
                 raise dl.PlatformException(f"No items was uploaded! local paths: {new_items_path}")
@@ -116,7 +119,6 @@ class PdfExtractor(dl.BaseServiceRunner):
                         logger.info(f"Image saved as {image_name}")
 
         return images_paths
-
 
 
 if __name__ == "__main__":
