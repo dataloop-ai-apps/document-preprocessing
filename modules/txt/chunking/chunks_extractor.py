@@ -108,11 +108,13 @@ class ChunksExtractor(dl.BaseServiceRunner):
             binaries.append(bin)
 
         # Uploading all chunk items - bulk
-        chunks_items = item.dataset.items.upload(local_path=binaries,
-                                                remote_path=remote_path_for_chunks,
-                                                item_metadata=metadata,
-                                                overwrite=True
-                                                    )
+        chunks_items = item.dataset.items.upload(
+            local_path=binaries,
+            remote_path=remote_path_for_chunks,
+            item_metadata=metadata,
+            overwrite=True,
+            raise_on_error=True,
+        )
 
         # raise if none
         if chunks_items is None:
@@ -297,18 +299,23 @@ class ChunksExtractor(dl.BaseServiceRunner):
             logger.info(f"Saved chunk to temporary file at: {temp_file_path}")
 
             original_id = item.metadata.get('user', dict()).get('original_item_id', None)
-            clean_chunk_item = item.dataset.items.upload(local_path=temp_file_path,
-                                                         remote_path=remote_path_for_clean_chunks,
-                                                         overwrite=True,
-                                                         item_metadata={
-                                                             'user': {'clean_chunk': True,
-                                                                      'original_item_id': original_id,
-                                                                      'original_chunk_id': item.id}})
+            clean_chunk_item = item.dataset.items.upload(
+                local_path=temp_file_path,
+                remote_path=remote_path_for_clean_chunks,
+                overwrite=True,
+                item_metadata={
+                    "user": {
+                        "clean_chunk": True,
+                        "original_item_id": original_id,
+                        "original_chunk_id": item.id,
+                    }
+                },
+                overwrite=True,
+                raise_on_error=True,
+            )
         pbar.update()
 
         return clean_chunk_item
-
-
 
 
 if __name__ == "__main__":
