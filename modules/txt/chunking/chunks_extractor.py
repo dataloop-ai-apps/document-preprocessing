@@ -302,7 +302,6 @@ class ChunksExtractor(dl.BaseServiceRunner):
             clean_chunk_item = item.dataset.items.upload(
                 local_path=temp_file_path,
                 remote_path=remote_path_for_clean_chunks,
-                overwrite=True,
                 item_metadata={
                     "user": {
                         "clean_chunk": True,
