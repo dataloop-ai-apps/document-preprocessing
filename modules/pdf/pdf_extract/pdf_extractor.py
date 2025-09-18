@@ -42,7 +42,6 @@ class PdfExtractor(dl.BaseServiceRunner):
             new_items = item.dataset.items.upload(
                 local_path=new_items_path,
                 remote_path=remote_path,
-                remote_name=remote_name,
                 item_metadata={
                     "user": {"extracted_from_pdf": True, "original_item_id": item.id}
                 },
