@@ -1,6 +1,5 @@
 from langchain.text_splitter import CharacterTextSplitter, RecursiveCharacterTextSplitter
-from unstructured.cleaners.core import replace_unicode_quotes, clean, clean_non_ascii_chars, \
-    clean_ordered_bullets, group_broken_paragraphs, remove_punctuation
+from unstructured.cleaners.core import replace_unicode_quotes, clean, clean_non_ascii_chars, clean_ordered_bullets, group_broken_paragraphs, remove_punctuation
 from unstructured.partition.text import partition_text
 from concurrent.futures import ThreadPoolExecutor
 from unstructured.documents.elements import Text
@@ -18,6 +17,7 @@ import os
 import io
 
 logger = logging.getLogger('[CHUNKS-EXTRACTOR]')
+
 
 class ChunksExtractor(dl.BaseServiceRunner):
 
@@ -53,25 +53,27 @@ class ChunksExtractor(dl.BaseServiceRunner):
         if not item.mimetype == 'text/plain':
             raise ValueError(
                 f"Item id : {item.id} is not txt file. This functions excepts txt only. "
-                f"Use other extracting applications from Marketplace to convert text format to txt")
+                f"Use other extracting applications from Marketplace to convert text format to txt"
+            )
 
         # Extract text
         buffer = item.download(save_locally=False)
         text = buffer.read().decode('utf-8')
         chunk_tic = time.time()
-        chunks = self.chunking_strategy(text=text,
-                                        strategy=chunking_strategy,
-                                        chunk_size=max_chunk_size,
-                                        chunk_overlap=chunk_overlap)
+        chunks = self.chunking_strategy(
+            text=text,
+            strategy=chunking_strategy,
+            chunk_size=max_chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
         logger.info(f"Time taken to chunk: {time.time() - chunk_tic} seconds")
         upload_tic = time.time()
-        items = self.upload_chunks(chunks=chunks,
-                                   item=item,
-                                   remote_path_for_chunks=remote_path_for_chunks,
-                                   metadata={'system': {'document': item.name},
-                                             'user': {'extracted_chunk': True,
-                                                      'original_item_id': item.id}}
-                                   )
+        items = self.upload_chunks(
+            chunks=chunks,
+            item=item,
+            remote_path_for_chunks=remote_path_for_chunks,
+            metadata={'system': {'document': item.name}, 'user': {'extracted_chunk': True, 'original_item_id': item.id}},
+        )
         logger.info(f"Time taken to upload: {time.time() - upload_tic} seconds")
         logger.info(f"Number of chunks: {len(items)}")
         logger.info(f"Total time taken: {time.time() - tic} seconds")
@@ -102,15 +104,16 @@ class ChunksExtractor(dl.BaseServiceRunner):
         for ind, chunk in enumerate(chunks):
             base_name = item.name
             chunk_filename = f"{os.path.splitext(base_name)[0]}-{ind}.txt"
-            bin = io.BytesIO(chunk.encode('utf-8'))   
-            bin.name =  chunk_filename
+            bin = io.BytesIO(chunk.encode('utf-8'))
+            bin.name = chunk_filename
             bin.seek(0)
             binaries.append(bin)
 
         # Uploading all chunk items - bulk
+        remote_path = os.path.join(remote_path_for_chunks, item.dir.lstrip('/')).replace('\\', '/')
         chunks_items = item.dataset.items.upload(
             local_path=binaries,
-            remote_path=remote_path_for_chunks,
+            remote_path=remote_path,
             item_metadata=metadata,
             overwrite=True,
             raise_on_error=True,
@@ -153,11 +156,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
 
         # Chunking by a fixed size input
         if strategy == 'fixed-size':
-            text_splitter = CharacterTextSplitter(
-                separator="",
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap
-            )
+            text_splitter = CharacterTextSplitter(separator="", chunk_size=chunk_size, chunk_overlap=chunk_overlap)
             chunks = text_splitter.create_documents([text])
             chunks = [chunk.page_content for chunk in chunks]
 
@@ -210,14 +209,15 @@ class ChunksExtractor(dl.BaseServiceRunner):
 
         tic = time.time()
         futures = list()
-        with (ThreadPoolExecutor(max_workers=32) as executor):
+        with ThreadPoolExecutor(max_workers=32) as executor:
             with tqdm(total=len(items), desc='Processing') as pbar:
                 for item in items:
-                    kwargs = {'pbar': pbar,
-                              'item': item,
-                              'to_correct_spelling': to_correct_spelling,
-                              "remote_path_for_clean_chunks": remote_path_for_clean_chunks
-                              }
+                    kwargs = {
+                        'pbar': pbar,
+                        'item': item,
+                        'to_correct_spelling': to_correct_spelling,
+                        "remote_path_for_clean_chunks": remote_path_for_clean_chunks,
+                    }
                     future = executor.submit(self.clean_chunk, **kwargs)
                     futures.append(future)
         results = [future.result() for future in futures]
@@ -227,8 +227,7 @@ class ChunksExtractor(dl.BaseServiceRunner):
         return results
 
     @staticmethod
-    def clean_chunk(pbar: tqdm, item: dl.Item, remote_path_for_clean_chunks: str,
-                    to_correct_spelling: bool = True) -> dl.Item:
+    def clean_chunk(pbar: tqdm, item: dl.Item, remote_path_for_clean_chunks: str, to_correct_spelling: bool = True) -> dl.Item:
         """
         Cleans a text chunk item using various text preprocessing functions and optionally applies spell-checking.
 
@@ -246,25 +245,28 @@ class ChunksExtractor(dl.BaseServiceRunner):
             dl.Item: The cleaned text chunk item uploaded back to the Dataloop dataset.
         """
         # Create a partial function for cleaner1 with the specified parameters for clean function of unstructured-io
-        cleaner1_partial = partial(clean,
-                                   extra_whitespace=True,  # Removes extra whitespace from a section of text
-                                   dashes=True,  # Removes dashes from a section of text.
-                                   bullets=True,  # Removes bullets from the beginning of text.
-                                   trailing_punctuation=True,  # Removes trailing punctuation from a section of text.
-                                   lowercase=True)  # Lowercase the output
+        cleaner1_partial = partial(
+            clean,
+            extra_whitespace=True,  # Removes extra whitespace from a section of text
+            dashes=True,  # Removes dashes from a section of text.
+            bullets=True,  # Removes bullets from the beginning of text.
+            trailing_punctuation=True,  # Removes trailing punctuation from a section of text.
+            lowercase=True,
+        )  # Lowercase the output
 
-        cleaners = [cleaner1_partial,
-                    # Replaces unicode quote characters in strings
-                    replace_unicode_quotes,
-                    # Removes non-ascii characters from a string.
-                    clean_non_ascii_chars,
-                    # # Remove alphanumeric bullets from the beginning of text up to three subsection levels.
-                    # clean_ordered_bullets,
-                    # Groups together paragraphs that are broken up with line breaks
-                    group_broken_paragraphs,
-                    # Removes ASCII and unicode punctuation from a string.
-                    remove_punctuation
-                    ]
+        cleaners = [
+            cleaner1_partial,
+            # Replaces unicode quote characters in strings
+            replace_unicode_quotes,
+            # Removes non-ascii characters from a string.
+            clean_non_ascii_chars,
+            # # Remove alphanumeric bullets from the beginning of text up to three subsection levels.
+            # clean_ordered_bullets,
+            # Groups together paragraphs that are broken up with line breaks
+            group_broken_paragraphs,
+            # Removes ASCII and unicode punctuation from a string.
+            remove_punctuation,
+        ]
 
         with tempfile.TemporaryDirectory() as temp_dir:
             file_path = os.path.join(temp_dir, item.name)
@@ -320,15 +322,22 @@ class ChunksExtractor(dl.BaseServiceRunner):
 if __name__ == "__main__":
     dl.setenv('prod')
     from collections import namedtuple
+
     chunking_strategy = 'fixed-size'
     max_chunk_size = 1000
     chunk_overlap = 100
     remote_path_for_chunks = "/chunks"
 
-  
     context = namedtuple('Context', ['node'])
     context.node = namedtuple('Node', ['metadata'])
-    context.node.metadata = {"customNodeConfig": {"chunking_strategy": chunking_strategy, "max_chunk_size": max_chunk_size, "chunk_overlap": chunk_overlap, "remote_path_for_chunks": remote_path_for_chunks}}
+    context.node.metadata = {
+        "customNodeConfig": {
+            "chunking_strategy": chunking_strategy,
+            "max_chunk_size": max_chunk_size,
+            "chunk_overlap": chunk_overlap,
+            "remote_path_for_chunks": remote_path_for_chunks,
+        }
+    }
     item = dl.items.get(item_id="68c27eb9c34dd098e324671b")
     extractor = ChunksExtractor()
     tic = time.time()
