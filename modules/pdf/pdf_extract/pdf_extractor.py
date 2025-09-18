@@ -4,6 +4,7 @@ import dtlpy as dl
 import tempfile
 import logging
 import pypdf
+import tqdm
 import fitz
 import os
 
@@ -70,9 +71,16 @@ class PdfExtractor(dl.BaseServiceRunner):
             logger.info(f"PDF metadata: {pdf_reader.metadata}")
 
             text_parts = []
-            for page in pdf_reader.pages:
-                text_parts.append(page.extract_text())
-
+            with tqdm.tqdm(total=len(pdf_reader.pages), desc="Extracting text from PDF") as pbar:
+                for i_page, page in enumerate(pdf_reader.pages):
+                    text_parts.append(page.extract_text())
+                    if (i_page + 1) % 10 == 0:
+                        pbar.update(10)
+                # Update remaining pages at the end
+                remaining = len(pdf_reader.pages) % 10
+                if remaining:
+                    pbar.update(remaining)
+            
             new_item_path = f'{os.path.splitext(pdf_path)[0]}.txt'
             with open(new_item_path, 'w', encoding='utf-8') as f:
                 f.write('\n\n'.join(text_parts))
