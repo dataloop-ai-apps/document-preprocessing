@@ -3,7 +3,7 @@ from typing import List
 import dtlpy as dl
 import tempfile
 import logging
-import pypdf
+# import pypdf
 import tqdm
 import fitz
 import os
@@ -66,18 +66,18 @@ class PdfExtractor(dl.BaseServiceRunner):
         Returns:
             list: A list containing the path to the generated .txt file.
         """
-        with open(pdf_path, 'rb') as open_file:
-            pdf_reader = pypdf.PdfReader(open_file)
-            logger.info(f"PDF metadata: {pdf_reader.metadata}")
+        with fitz.open(pdf_path) as doc:
+            # pdf_reader = pypdf.PdfReader(open_file)
+            logger.info(f"PDF metadata: {doc.metadata}")
 
             text_parts = []
-            with tqdm.tqdm(total=len(pdf_reader.pages), desc="Extracting text from PDF") as pbar:
-                for i_page, page in enumerate(pdf_reader.pages):
-                    text_parts.append(page.extract_text())
+            with tqdm.tqdm(total=len(doc), desc="Extracting text from PDF") as pbar:
+                for i_page, page in enumerate(doc):
+                    text_parts.append(page.get_text())
                     if (i_page + 1) % 10 == 0:
                         pbar.update(10)
                 # Update remaining pages at the end
-                remaining = len(pdf_reader.pages) % 10
+                remaining = len(doc) % 10
                 if remaining:
                     pbar.update(remaining)
             
@@ -130,7 +130,7 @@ class PdfExtractor(dl.BaseServiceRunner):
 
 
 if __name__ == "__main__":
-    dl.setenv('prod')
+    dl.setenv('dell')
     from collections import namedtuple
     extract_images = False
     remote_path_for_extractions = "/extracted_from_pdfs"
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     context = namedtuple('Context', ['node'])
     context.node = namedtuple('Node', ['metadata'])
     context.node.metadata = {"customNodeConfig": {"extract_images": extract_images, "remote_path_for_extractions": remote_path_for_extractions}}
-    item = dl.items.get(item_id="68c1a2d73415011b26e1606f")
+    item = dl.items.get(item_id="68cab38515563488b075ede7")
     extractor = PdfExtractor()
     output = extractor.pdf_extraction(item=item, context=context)
     print(output)
