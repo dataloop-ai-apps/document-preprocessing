@@ -34,7 +34,9 @@
             "maxReplicas": 10,
             "queueLength": 100
           }
-        }
+        },
+        "executionTimeout": 60,
+        "drainTime": 10
       }
     ],
     "pipelineNodes": [
