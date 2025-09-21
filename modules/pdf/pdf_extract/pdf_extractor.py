@@ -24,21 +24,48 @@ class PdfExtractor(dl.BaseServiceRunner):
         extract_images = node.metadata['customNodeConfig']['extract_images']
         remote_path_for_extractions = node.metadata['customNodeConfig']['remote_path_for_extractions']
 
+        logger.info(
+            f"Starting PDF extraction | item_id={item.id} name={item.name} mimetype={item.mimetype} dir={item.dir}"
+        )
         if not item.mimetype == 'application/pdf':
-            raise ValueError(f"Item id : {item.id} is not a PDF file! This functions excepts pdf only")
+            logger.error(
+                f"Item is not a PDF | item_id={item.id} mimetype={item.mimetype}"
+            )
+            raise ValueError(
+                f"Item id : {item.id} is not a PDF file! This functions excepts pdf only"
+            )
 
         # Download item
         with tempfile.TemporaryDirectory() as temp_dir:
             item_local_path = item.download(local_path=temp_dir)
+            logger.info(f"Downloaded item | item_id={item.id} local_path={item_local_path}")
 
-            new_items_path = self.extract_text_from_pdf(pdf_path=item_local_path)
+            try:
+                new_items_path = self.extract_text_from_pdf(pdf_path=item_local_path)
+                logger.info(
+                    f"Extracted text | item_id={item.id} text_file={new_items_path}"
+                )
+            except Exception:
+                logger.exception(f"Failed extracting text | item_id={item.id} path={item_local_path}")
+                raise
+
             if extract_images is True:
-                new_images_path = self.extract_images_from_pdf(pdf_path=item_local_path)
-                new_items_path.extend(new_images_path)
+                try:
+                    new_images_path = self.extract_images_from_pdf(pdf_path=item_local_path)
+                    new_items_path.extend(new_images_path)
+                    logger.info(
+                        f"Extracted images | item_id={item.id} images_saved={len(new_images_path)}"
+                    )
+                except Exception:
+                    logger.exception(f"Failed extracting images | item_id={item.id} path={item_local_path}")
+                    raise
 
             name, ext = os.path.splitext(item.name)
             remote_name = f"{name}.txt"
             remote_path = os.path.join(remote_path_for_extractions, item.dir.lstrip('/')).replace('\\', '/')
+            logger.info(
+                f"Uploading extracted files | item_id={item.id} count={len(new_items_path)} remote_path={remote_path}"
+            )
             new_items = item.dataset.items.upload(
                 local_path=new_items_path,
                 remote_path=remote_path,
@@ -50,11 +77,20 @@ class PdfExtractor(dl.BaseServiceRunner):
             )
 
             if new_items is None:
+                logger.error(f"Upload returned None | item_id={item.id} local_paths={new_items_path}")
                 raise dl.PlatformException(f"No items was uploaded! local paths: {new_items_path}")
             elif isinstance(new_items, dl.Item):
                 all_items = [new_items]
             else:
                 all_items = [item for item in new_items]
+
+            try:
+                uploaded_names = [it.name for it in all_items]
+            except Exception:
+                uploaded_names = ["<unknown>"]
+            logger.info(
+                f"Upload completed | item_id={item.id} uploaded_count={len(all_items)} remote_path={remote_path} names={uploaded_names}"
+            )
 
         return all_items
 
@@ -69,24 +105,34 @@ class PdfExtractor(dl.BaseServiceRunner):
         Returns:
             list: A list containing the path to the generated .txt file.
         """
-        with fitz.open(pdf_path) as doc:
-            # pdf_reader = pypdf.PdfReader(open_file)
-            logger.info(f"PDF metadata: {doc.metadata}")
+        logger.info(f"Begin text extraction | pdf_path={pdf_path}")
+        try:
+            with fitz.open(pdf_path) as doc:
+                # pdf_reader = pypdf.PdfReader(open_file)
+                logger.info(f"PDF metadata: {doc.metadata} pages={len(doc)}")
 
-            text_parts = []
-            with tqdm.tqdm(total=len(doc), desc="Extracting text from PDF") as pbar:
-                for i_page, page in enumerate(doc):
-                    text_parts.append(page.get_text())
-                    if (i_page + 1) % 10 == 0:
-                        pbar.update(10)
-                # Update remaining pages at the end
-                remaining = len(doc) % 10
-                if remaining:
-                    pbar.update(remaining)
-            
+                text_parts = []
+                with tqdm.tqdm(total=len(doc), desc="Extracting text from PDF") as pbar:
+                    for i_page, page in enumerate(doc):
+                        text_parts.append(page.get_text())
+                        if (i_page + 1) % 10 == 0:
+                            pbar.update(10)
+                    # Update remaining pages at the end
+                    remaining = len(doc) % 10
+                    if remaining:
+                        pbar.update(remaining)
+                        
             new_item_path = f'{os.path.splitext(pdf_path)[0]}.txt'
+            text_content = '\n\n'.join(text_parts)
+            logger.info(f"Text file written | path={new_item_path} characters={len(text_content)}")
             with open(new_item_path, 'w', encoding='utf-8') as f:
-                f.write('\n\n'.join(text_parts))
+                f.write(text_content)
+            logger.info(
+                f"Text file written | path={new_item_path} characters={len(text_content)}"
+            )
+        except Exception:
+            logger.exception(f"Error during text extraction | pdf_path={pdf_path}")
+            raise
 
         return [new_item_path]
 
@@ -101,6 +147,7 @@ class PdfExtractor(dl.BaseServiceRunner):
         Returns:
             list: A list of paths to the saved image files extracted from the PDF.
         """
+        logger.info(f"Begin image extraction | pdf_path={pdf_path}")
         # Use context manager to ensure PDF document is properly closed
         with fitz.open(pdf_path) as pdf_file:
             images_paths = list()
@@ -113,7 +160,7 @@ class PdfExtractor(dl.BaseServiceRunner):
                 if image_list:
                     logger.info(f"Found a total of {len(image_list)} images on page {page_index}")
                 else:
-                    logger.info("No images found on page", page_index)
+                    logger.info(f"No images found on page {page_index}")
 
                 for image_index, img in enumerate(image_list, start=1):
                     # get the cross-reference number of the image object in the PDF (xref - the PDF reader way to locate and access various objects).
@@ -128,6 +175,8 @@ class PdfExtractor(dl.BaseServiceRunner):
                         image_file.write(image_bytes)
                         images_paths.append(image_name)
                         logger.info(f"Image saved as {image_name}")
+
+        logger.info(f"Image extraction completed | pdf_path={pdf_path} images_saved={len(images_paths)}")
 
         return images_paths
 
