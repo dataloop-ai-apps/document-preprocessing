@@ -1,9 +1,10 @@
 from pathlib import Path
-from typing import List
+from typing import List, Iterable
 import dtlpy as dl
 import tempfile
 import logging
-# import pypdf
+import subprocess
+import time
 import tqdm
 import fitz
 import os
@@ -95,41 +96,70 @@ class PdfExtractor(dl.BaseServiceRunner):
         return all_items
 
     @staticmethod
-    def extract_text_from_pdf(pdf_path: str) -> List[str]:
+    def iter_pdf_text(pdf_path: str, timeout: int = 60) -> Iterable[str]:
+        """Extract text from PDF using pdftotext with timeout protection"""
+        cmd = ["pdftotext", "-enc", "UTF-8", pdf_path, "-"]
+        
+        try:
+            proc = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0
+            )
+        except FileNotFoundError:
+            raise Exception("pdftotext command not found. Install poppler-utils.")
+        
+        start = time.time()
+        try:
+            assert proc.stdout is not None
+            while True:
+                if time.time() - start > timeout:
+                    proc.kill()
+                    raise Exception(f"PDF extraction timed out after {timeout} seconds")
+                
+                chunk = proc.stdout.read(1 << 20)
+                if not chunk:
+                    break
+                yield chunk.decode("utf-8", errors="replace")
+                
+        except Exception as e:
+            try:
+                if proc.poll() is None:
+                    proc.kill()
+            except Exception as kill_error:
+                logger.error(f"Error killing process: {kill_error}")
+            raise Exception(f"PDF extraction failed: {str(e)}")
+
+    def extract_pdf_text_with_pdftotext(self, pdf_path: str, timeout: int = 60) -> str:
+        """Extract complete PDF text using pdftotext with timeout"""
+        logger.info(f"Extracting text with pdftotext | timeout={timeout}s")
+        return "".join(self.iter_pdf_text(pdf_path, timeout=timeout))
+
+    @staticmethod
+    def extract_text_from_pdf(pdf_path: str, timeout: int = 300) -> List[str]:
         """
         Extracts text from a PDF file and saves it as a single .txt file.
+        Uses pdftotext for better text extraction quality.
 
         Args:
             pdf_path (str): The path to the PDF file to be processed.
+            timeout (int): Timeout in seconds for the extraction process
 
         Returns:
             list: A list containing the path to the generated .txt file.
         """
-        logger.info(f"Begin text extraction | pdf_path={pdf_path}")
+        logger.info(f"Begin text extraction | pdf_path={pdf_path} timeout={timeout}s")
+        
         try:
-            with fitz.open(pdf_path) as doc:
-                # pdf_reader = pypdf.PdfReader(open_file)
-                logger.info(f"PDF metadata: {doc.metadata} pages={len(doc)}")
-
-                text_parts = []
-                with tqdm.tqdm(total=len(doc), desc="Extracting text from PDF") as pbar:
-                    for i_page, page in enumerate(doc):
-                        text_parts.append(page.get_text())
-                        if (i_page + 1) % 10 == 0:
-                            pbar.update(10)
-                    # Update remaining pages at the end
-                    remaining = len(doc) % 10
-                    if remaining:
-                        pbar.update(remaining)
-                        
+            # Use pdftotext for extraction with timeout
+            extractor = PdfExtractor()
+            text_content = extractor.extract_pdf_text_with_pdftotext(pdf_path, timeout=timeout)
+            
             new_item_path = f'{os.path.splitext(pdf_path)[0]}.txt'
-            text_content = '\n\n'.join(text_parts)
-            logger.info(f"Text file written | path={new_item_path} characters={len(text_content)}")
+            
             with open(new_item_path, 'w', encoding='utf-8') as f:
                 f.write(text_content)
-            logger.info(
-                f"Text file written | path={new_item_path} characters={len(text_content)}"
-            )
+            
+            logger.info(f"Text file written | path={new_item_path} characters={len(text_content)}")
+            
         except Exception:
             logger.exception(f"Error during text extraction | pdf_path={pdf_path}")
             raise
@@ -187,7 +217,7 @@ if __name__ == "__main__":
     extract_images = False
     remote_path_for_extractions = "/extracted_from_pdfs"
 
-  
+   
     context = namedtuple('Context', ['node'])
     context.node = namedtuple('Node', ['metadata'])
     context.node.metadata = {"customNodeConfig": {"extract_images": extract_images, "remote_path_for_extractions": remote_path_for_extractions}}
