@@ -6,7 +6,6 @@ import logging
 import subprocess
 import time
 import tqdm
-import fitz
 import os
 
 logger = logging.getLogger("pdf-to-text-logger")
@@ -67,53 +66,53 @@ class PdfExtractor(dl.BaseServiceRunner):
 
         return new_item
 
-    @staticmethod
-    def extract_images_from_pdf(pdf_path) -> List:
-        """
-        Extracts images from a PDF file and saves them as separate image files.
+    # @staticmethod
+    # def extract_images_from_pdf(pdf_path) -> List:
+    #     """
+    #     Extracts images from a PDF file and saves them as separate image files.
 
-        Args:
-            pdf_path (str): The path to the PDF file to extract images from.
+    #     Args:
+    #         pdf_path (str): The path to the PDF file to extract images from.
 
-        Returns:
-            list: A list of paths to the saved image files extracted from the PDF.
-        """
-        logger.info(f"Begin image extraction | pdf_path={pdf_path}")
-        # Use context manager to ensure PDF document is properly closed
-        with fitz.open(pdf_path) as pdf_file:
-            images_paths = list()
-            # iterate over PDF pages
-            for page_index in range(len(pdf_file)):
+    #     Returns:
+    #         list: A list of paths to the saved image files extracted from the PDF.
+    #     """
+    #     logger.info(f"Begin image extraction | pdf_path={pdf_path}")
+    #     # Use context manager to ensure PDF document is properly closed
+    #     with fitz.open(pdf_path) as pdf_file:
+    #         images_paths = list()
+    #         # iterate over PDF pages
+    #         for page_index in range(len(pdf_file)):
 
-                page = pdf_file.load_page(page_index)  # load the page
-                image_list = page.get_images(full=True)  # get images on the page
+    #             page = pdf_file.load_page(page_index)  # load the page
+    #             image_list = page.get_images(full=True)  # get images on the page
 
-                if image_list:
-                    logger.info(
-                        f"Found a total of {len(image_list)} images on page {page_index}"
-                    )
-                else:
-                    logger.info(f"No images found on page {page_index}")
+    #             if image_list:
+    #                 logger.info(
+    #                     f"Found a total of {len(image_list)} images on page {page_index}"
+    #                 )
+    #             else:
+    #                 logger.info(f"No images found on page {page_index}")
 
-                for image_index, img in enumerate(image_list, start=1):
-                    # get the cross-reference number of the image object in the PDF (xref - the PDF reader way to locate and access various objects).
-                    xref = img[0]
+    #             for image_index, img in enumerate(image_list, start=1):
+    #                 # get the cross-reference number of the image object in the PDF (xref - the PDF reader way to locate and access various objects).
+    #                 xref = img[0]
 
-                    base_image = pdf_file.extract_image(xref)
-                    image_bytes, image_ext = base_image["image"], base_image["ext"]
+    #                 base_image = pdf_file.extract_image(xref)
+    #                 image_bytes, image_ext = base_image["image"], base_image["ext"]
 
-                    # save the image
-                    image_name = f"{os.path.splitext(pdf_path)[0]}_page_{page_index + 1}.{image_ext}"
-                    with open(image_name, "wb") as image_file:
-                        image_file.write(image_bytes)
-                        images_paths.append(image_name)
-                        logger.info(f"Image saved as {image_name}")
+    #                 # save the image
+    #                 image_name = f"{os.path.splitext(pdf_path)[0]}_page_{page_index + 1}.{image_ext}"
+    #                 with open(image_name, "wb") as image_file:
+    #                     image_file.write(image_bytes)
+    #                     images_paths.append(image_name)
+    #                     logger.info(f"Image saved as {image_name}")
 
-        logger.info(
-            f"Image extraction completed | pdf_path={pdf_path} images_saved={len(images_paths)}"
-        )
+    #     logger.info(
+    #         f"Image extraction completed | pdf_path={pdf_path} images_saved={len(images_paths)}"
+    #     )
 
-        return images_paths
+    #     return images_paths
 
 
 if __name__ == "__main__":
