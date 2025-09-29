@@ -9,66 +9,54 @@ import tqdm
 import fitz
 import os
 
-logger = logging.getLogger('pdf-to-text-logger')
+logger = logging.getLogger("pdf-to-text-logger")
 
 
 class PdfExtractor(dl.BaseServiceRunner):
 
-    def pdf_extraction(self, item: dl.Item, context: dl.Context) -> List[dl.Item]:
-        """
-        The extracting text from pdf item and uploading it as a text file.
-
-        :param item: Dataloop item, pdf file
-        :return: Text Dataloop item
-        """
-        node = context.node
-        extract_images = node.metadata['customNodeConfig']['extract_images']
-        remote_path_for_extractions = node.metadata['customNodeConfig']['remote_path_for_extractions']
-
-        logger.info(
-            f"Starting PDF extraction | item_id={item.id} name={item.name} mimetype={item.mimetype} dir={item.dir}"
+    @staticmethod
+    def iter_pdf_text(pdf_path: str, timeout: int = 60) -> Iterable[str]:
+        cmd = ["pdftotext", "-enc", "UTF-8", pdf_path, "-"]
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0
         )
-        if not item.mimetype == 'application/pdf':
-            logger.error(
-                f"Item is not a PDF | item_id={item.id} mimetype={item.mimetype}"
-            )
-            raise ValueError(
-                f"Item id : {item.id} is not a PDF file! This functions excepts pdf only"
-            )
+        start = time.time()
+        try:
+            while True:
+                if time.time() - start > timeout:
+                    proc.kill()
+                    raise Exception(f"PDF extraction timed out after {timeout} seconds")
+                chunk = proc.stdout.read(1 << 20)
+                if not chunk:
+                    break
+                yield chunk.decode("utf-8", errors="replace")
+        except Exception:
+            try:
+                if proc.poll() is None:
+                    proc.kill()
+            except Exception as e:
+                print(e)
+            raise Exception(f"PDF extraction timed out after {timeout} seconds")
 
-        # Download item
+    def extract_pdf_text(self, pdf_path: str) -> str:
+        return "".join(self.iter_pdf_text(pdf_path))
+
+    def pdf_extraction(self, item: dl.Item, context: dl.Context) -> dl.Item:
+        remote_path_for_extractions = context.node.metadata["customNodeConfig"][
+            "remote_path_for_extractions"
+        ]
         with tempfile.TemporaryDirectory() as temp_dir:
             item_local_path = item.download(local_path=temp_dir)
-            logger.info(f"Downloaded item | item_id={item.id} local_path={item_local_path}")
-
-            try:
-                new_items_path = self.extract_text_from_pdf(pdf_path=item_local_path)
-                logger.info(
-                    f"Extracted text | item_id={item.id} text_file={new_items_path}"
-                )
-            except Exception:
-                logger.exception(f"Failed extracting text | item_id={item.id} path={item_local_path}")
-                raise
-
-            if extract_images is True:
-                try:
-                    new_images_path = self.extract_images_from_pdf(pdf_path=item_local_path)
-                    new_items_path.extend(new_images_path)
-                    logger.info(
-                        f"Extracted images | item_id={item.id} images_saved={len(new_images_path)}"
-                    )
-                except Exception:
-                    logger.exception(f"Failed extracting images | item_id={item.id} path={item_local_path}")
-                    raise
-
+            text = self.extract_pdf_text(pdf_path=item_local_path)
+            text_file_path = os.path.join(temp_dir, f"{Path(item.name).stem}.txt")
+            with open(text_file_path, "w", encoding="utf-8") as temp_text_file:
+                temp_text_file.write(text)
             name, ext = os.path.splitext(item.name)
-            remote_name = f"{name}.txt"
-            remote_path = os.path.join(remote_path_for_extractions, item.dir.lstrip('/')).replace('\\', '/')
-            logger.info(
-                f"Uploading extracted files | item_id={item.id} count={len(new_items_path)} remote_path={remote_path}"
-            )
-            new_items = item.dataset.items.upload(
-                local_path=new_items_path,
+            remote_path = os.path.join(
+                remote_path_for_extractions, item.dir.lstrip("/"), f"{name}.txt"
+            ).replace("\\", "/")
+            new_item = item.dataset.items.upload(
+                local_path=text_file_path,
                 remote_path=remote_path,
                 item_metadata={
                     "user": {"extracted_from_pdf": True, "original_item_id": item.id}
@@ -77,94 +65,7 @@ class PdfExtractor(dl.BaseServiceRunner):
                 raise_on_error=True,
             )
 
-            if new_items is None:
-                logger.error(f"Upload returned None | item_id={item.id} local_paths={new_items_path}")
-                raise dl.PlatformException(f"No items was uploaded! local paths: {new_items_path}")
-            elif isinstance(new_items, dl.Item):
-                all_items = [new_items]
-            else:
-                all_items = [item for item in new_items]
-
-            try:
-                uploaded_names = [it.name for it in all_items]
-            except Exception:
-                uploaded_names = ["<unknown>"]
-            logger.info(
-                f"Upload completed | item_id={item.id} uploaded_count={len(all_items)} remote_path={remote_path} names={uploaded_names}"
-            )
-
-        return all_items
-
-    @staticmethod
-    def iter_pdf_text(pdf_path: str, timeout: int = 60) -> Iterable[str]:
-        """Extract text from PDF using pdftotext with timeout protection"""
-        cmd = ["pdftotext", "-enc", "UTF-8", pdf_path, "-"]
-        
-        try:
-            proc = subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0
-            )
-        except FileNotFoundError:
-            raise Exception("pdftotext command not found. Install poppler-utils.")
-        
-        start = time.time()
-        try:
-            assert proc.stdout is not None
-            while True:
-                if time.time() - start > timeout:
-                    proc.kill()
-                    raise Exception(f"PDF extraction timed out after {timeout} seconds")
-                
-                chunk = proc.stdout.read(1 << 20)
-                if not chunk:
-                    break
-                yield chunk.decode("utf-8", errors="replace")
-                
-        except Exception as e:
-            try:
-                if proc.poll() is None:
-                    proc.kill()
-            except Exception as kill_error:
-                logger.error(f"Error killing process: {kill_error}")
-            raise Exception(f"PDF extraction failed: {str(e)}")
-
-    def extract_pdf_text_with_pdftotext(self, pdf_path: str, timeout: int = 60) -> str:
-        """Extract complete PDF text using pdftotext with timeout"""
-        logger.info(f"Extracting text with pdftotext | timeout={timeout}s")
-        return "".join(self.iter_pdf_text(pdf_path, timeout=timeout))
-
-    @staticmethod
-    def extract_text_from_pdf(pdf_path: str, timeout: int = 300) -> List[str]:
-        """
-        Extracts text from a PDF file and saves it as a single .txt file.
-        Uses pdftotext for better text extraction quality.
-
-        Args:
-            pdf_path (str): The path to the PDF file to be processed.
-            timeout (int): Timeout in seconds for the extraction process
-
-        Returns:
-            list: A list containing the path to the generated .txt file.
-        """
-        logger.info(f"Begin text extraction | pdf_path={pdf_path} timeout={timeout}s")
-        
-        try:
-            # Use pdftotext for extraction with timeout
-            extractor = PdfExtractor()
-            text_content = extractor.extract_pdf_text_with_pdftotext(pdf_path, timeout=timeout)
-            
-            new_item_path = f'{os.path.splitext(pdf_path)[0]}.txt'
-            
-            with open(new_item_path, 'w', encoding='utf-8') as f:
-                f.write(text_content)
-            
-            logger.info(f"Text file written | path={new_item_path} characters={len(text_content)}")
-            
-        except Exception:
-            logger.exception(f"Error during text extraction | pdf_path={pdf_path}")
-            raise
-
-        return [new_item_path]
+        return new_item
 
     @staticmethod
     def extract_images_from_pdf(pdf_path) -> List:
@@ -188,7 +89,9 @@ class PdfExtractor(dl.BaseServiceRunner):
                 image_list = page.get_images(full=True)  # get images on the page
 
                 if image_list:
-                    logger.info(f"Found a total of {len(image_list)} images on page {page_index}")
+                    logger.info(
+                        f"Found a total of {len(image_list)} images on page {page_index}"
+                    )
                 else:
                     logger.info(f"No images found on page {page_index}")
 
@@ -200,27 +103,34 @@ class PdfExtractor(dl.BaseServiceRunner):
                     image_bytes, image_ext = base_image["image"], base_image["ext"]
 
                     # save the image
-                    image_name = f'{os.path.splitext(pdf_path)[0]}_page_{page_index + 1}.{image_ext}'
+                    image_name = f"{os.path.splitext(pdf_path)[0]}_page_{page_index + 1}.{image_ext}"
                     with open(image_name, "wb") as image_file:
                         image_file.write(image_bytes)
                         images_paths.append(image_name)
                         logger.info(f"Image saved as {image_name}")
 
-        logger.info(f"Image extraction completed | pdf_path={pdf_path} images_saved={len(images_paths)}")
+        logger.info(
+            f"Image extraction completed | pdf_path={pdf_path} images_saved={len(images_paths)}"
+        )
 
         return images_paths
 
 
 if __name__ == "__main__":
-    dl.setenv('dell')
+    dl.setenv("dell")
     from collections import namedtuple
+
     extract_images = False
     remote_path_for_extractions = "/extracted_from_pdfs"
 
-   
-    context = namedtuple('Context', ['node'])
-    context.node = namedtuple('Node', ['metadata'])
-    context.node.metadata = {"customNodeConfig": {"extract_images": extract_images, "remote_path_for_extractions": remote_path_for_extractions}}
+    context = namedtuple("Context", ["node"])
+    context.node = namedtuple("Node", ["metadata"])
+    context.node.metadata = {
+        "customNodeConfig": {
+            "extract_images": extract_images,
+            "remote_path_for_extractions": remote_path_for_extractions,
+        }
+    }
     item = dl.items.get(item_id="68cab38515563488b075ede7")
     extractor = PdfExtractor()
     output = extractor.pdf_extraction(item=item, context=context)
