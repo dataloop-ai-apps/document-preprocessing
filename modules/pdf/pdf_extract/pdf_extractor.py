@@ -15,8 +15,8 @@ logger = logging.getLogger('pdf-to-text-logger')
 class PdfExtractor(dl.BaseServiceRunner):
 
     def __init__(self):
-        dl.client_api._upload_session_timeout = 60
-        dl.client_api._upload_chuck_timeout = 30
+        dl.client_api._upload_session_timeout = 30
+        dl.client_api._upload_chuck_timeout = 5
 
     def pdf_extraction(self, item: dl.Item, context: dl.Context) -> List[dl.Item]:
         """
