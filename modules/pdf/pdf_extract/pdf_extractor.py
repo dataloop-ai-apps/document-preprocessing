@@ -3,6 +3,7 @@ from typing import List
 import dtlpy as dl
 import tempfile
 import logging
+
 # import pypdf
 import tqdm
 import fitz
@@ -12,6 +13,10 @@ logger = logging.getLogger('pdf-to-text-logger')
 
 
 class PdfExtractor(dl.BaseServiceRunner):
+
+    def __init__(self):
+        dl.client_api._upload_session_timeout = 60
+        dl.client_api._upload_chuck_timeout = 30
 
     def pdf_extraction(self, item: dl.Item, context: dl.Context) -> List[dl.Item]:
         """
@@ -28,12 +33,8 @@ class PdfExtractor(dl.BaseServiceRunner):
             f"Starting PDF extraction | item_id={item.id} name={item.name} mimetype={item.mimetype} dir={item.dir}"
         )
         if not item.mimetype == 'application/pdf':
-            logger.error(
-                f"Item is not a PDF | item_id={item.id} mimetype={item.mimetype}"
-            )
-            raise ValueError(
-                f"Item id : {item.id} is not a PDF file! This functions excepts pdf only"
-            )
+            logger.error(f"Item is not a PDF | item_id={item.id} mimetype={item.mimetype}")
+            raise ValueError(f"Item id : {item.id} is not a PDF file! This functions excepts pdf only")
 
         # Download item
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -42,9 +43,7 @@ class PdfExtractor(dl.BaseServiceRunner):
 
             try:
                 new_items_path = self.extract_text_from_pdf(pdf_path=item_local_path)
-                logger.info(
-                    f"Extracted text | item_id={item.id} text_file={new_items_path}"
-                )
+                logger.info(f"Extracted text | item_id={item.id} text_file={new_items_path}")
             except Exception:
                 logger.exception(f"Failed extracting text | item_id={item.id} path={item_local_path}")
                 raise
@@ -53,9 +52,7 @@ class PdfExtractor(dl.BaseServiceRunner):
                 try:
                     new_images_path = self.extract_images_from_pdf(pdf_path=item_local_path)
                     new_items_path.extend(new_images_path)
-                    logger.info(
-                        f"Extracted images | item_id={item.id} images_saved={len(new_images_path)}"
-                    )
+                    logger.info(f"Extracted images | item_id={item.id} images_saved={len(new_images_path)}")
                 except Exception:
                     logger.exception(f"Failed extracting images | item_id={item.id} path={item_local_path}")
                     raise
@@ -69,9 +66,7 @@ class PdfExtractor(dl.BaseServiceRunner):
             new_items = item.dataset.items.upload(
                 local_path=new_items_path,
                 remote_path=remote_path,
-                item_metadata={
-                    "user": {"extracted_from_pdf": True, "original_item_id": item.id}
-                },
+                item_metadata={"user": {"extracted_from_pdf": True, "original_item_id": item.id}},
                 overwrite=True,
                 raise_on_error=True,
             )
@@ -121,15 +116,13 @@ class PdfExtractor(dl.BaseServiceRunner):
                     remaining = len(doc) % 10
                     if remaining:
                         pbar.update(remaining)
-                        
+
             new_item_path = f'{os.path.splitext(pdf_path)[0]}.txt'
             text_content = '\n\n'.join(text_parts)
             logger.info(f"Text file written | path={new_item_path} characters={len(text_content)}")
             with open(new_item_path, 'w', encoding='utf-8') as f:
                 f.write(text_content)
-            logger.info(
-                f"Text file written | path={new_item_path} characters={len(text_content)}"
-            )
+            logger.info(f"Text file written | path={new_item_path} characters={len(text_content)}")
         except Exception:
             logger.exception(f"Error during text extraction | pdf_path={pdf_path}")
             raise
@@ -184,13 +177,18 @@ class PdfExtractor(dl.BaseServiceRunner):
 if __name__ == "__main__":
     dl.setenv('dell')
     from collections import namedtuple
+
     extract_images = False
     remote_path_for_extractions = "/extracted_from_pdfs"
 
-  
     context = namedtuple('Context', ['node'])
     context.node = namedtuple('Node', ['metadata'])
-    context.node.metadata = {"customNodeConfig": {"extract_images": extract_images, "remote_path_for_extractions": remote_path_for_extractions}}
+    context.node.metadata = {
+        "customNodeConfig": {
+            "extract_images": extract_images,
+            "remote_path_for_extractions": remote_path_for_extractions,
+        }
+    }
     item = dl.items.get(item_id="68cab38515563488b075ede7")
     extractor = PdfExtractor()
     output = extractor.pdf_extraction(item=item, context=context)
