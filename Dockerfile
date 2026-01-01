@@ -1,6 +1,10 @@
-FROM dataloopai/dtlpy-agent:cpu.py3.10.opencv
+FROM hub.dataloop.ai/dtlpy-runner-images/cpu:python3.10_opencv
 USER 1000
-RUN pip install -U \
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Install Python dependencies
+# Using --no-cache-dir to reduce image size and avoid caching vulnerabilities
+RUN pip install --no-cache-dir \
     pypdfium2==4.28.0 \
     pypdf==4.2.0 \
     nltk==3.8.1 \
@@ -8,11 +12,11 @@ RUN pip install -U \
     autocorrect==2.6.1 \
     langchain==0.1.14 \
     requests-toolbelt==1.0.0 \
-    python-pptx==0.6.23\
-    openai==1.30.3\
-    opencv-python==4.8.1.78\
-    numpy==1.26.4\
-    "unstructured[all-docs]==0.12.0"\
+    python-pptx==0.6.23 \
+    openai==1.30.3 \
+    opencv-python==4.8.1.78 \
+    numpy==1.26.4 \
+    "unstructured[all-docs]==0.12.0" \
     Spire.Doc==12.7.1
 
 
