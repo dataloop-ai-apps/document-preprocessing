@@ -76,13 +76,17 @@ class ServiceRunner(dl.BaseServiceRunner):
 
     def add_response_to_chunk(self, item: dl.Item, model: dl.Model, context: dl.Context) -> dl.Item:
         """
-        Creates Contextual prompt item from a txt chunk item.
+        Extracts the model's assistant response from a prompt item and creates a text item.
 
-        :param item: Prompt item.
-        :param item: Model entity generated the response.
-        :param context: The Dataloop context providing parameters for chunking, including:
-                - `remote_path` (str): The remote path for uploading the prompt chunk.
-                - `overwrite_chunk` (bool): Whether to create a new chunk item or overwrite the original chunk.
+        If the prompt item has 'metadata.user.txt_chunk_id', the response is prepended to the
+        original chunk text (contextual enrichment). Otherwise, the assistant response is uploaded
+        as a standalone text item and user metadata from the prompt item is copied over.
+
+        :param item: Prompt item with an assistant response annotation.
+        :param model: Model entity that generated the response.
+        :param context: The Dataloop context providing parameters, including:
+                - `remote_path` (str): The remote path for uploading the result.
+                - `overwrite_chunk` (bool, optional): Whether to overwrite the original chunk. Defaults to False.
         """
 
         node = context.node
@@ -104,24 +108,26 @@ class ServiceRunner(dl.BaseServiceRunner):
 
         original_item_id = item.metadata.get('user', {}).get('txt_chunk_id')
         if original_item_id is None:
-            raise dl.exceptions.NotFound(
-                f"Item {item.id} is missing the 'original_item_id' in its metadata. Please add "
-                f"'metadata.user.original_item_id' with the ID of the item from which this chunk was created.")
-
-        original_item = dl.items.get(item_id=original_item_id)
-        buffer = original_item.download(save_locally=False)
-        chunk_text = buffer.read().decode('utf-8')
-        prompt_text = f"{context} \n {chunk_text}"
+            output_text = context
+        else:
+            original_item = dl.items.get(item_id=original_item_id)
+            buffer = original_item.download(save_locally=False)
+            chunk_text = buffer.read().decode('utf-8')
+            output_text = f"{context} \n {chunk_text}"
 
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_file = os.path.join(temp_dir, f"{Path(item.name).stem}.txt")
+            with open(temp_file, "w", encoding="utf-8") as f:
+                f.write(output_text)
 
-            # Write to the temporary file
-            with open(temp_file, "w", encoding="utf-8") as temp_text_file:
-                temp_text_file.write(prompt_text)
-
-            # Upload the file
-            if overwrite_chunk is True:
+            if original_item_id is None:
+                new_item = item.dataset.items.upload(
+                    local_path=temp_file,
+                    remote_path=remote_path,
+                    remote_name=f"{Path(item.name).stem}_contextual.txt",
+                    raise_on_error=True,
+                )
+            elif overwrite_chunk:
                 new_item = original_item.dataset.items.upload(
                     local_path=temp_file,
                     remote_name=original_item.name,
@@ -129,11 +135,10 @@ class ServiceRunner(dl.BaseServiceRunner):
                     raise_on_error=True,
                 )
             else:
-                remote_name = f"{Path(original_item.name).stem}_contextual.txt"
                 new_item = original_item.dataset.items.upload(
                     local_path=temp_file,
                     remote_path=remote_path,
-                    remote_name=remote_name,
+                    remote_name=f"{Path(original_item.name).stem}_contextual.txt",
                     item_metadata={
                         "user": {
                             "original_item_id": original_item_id,
