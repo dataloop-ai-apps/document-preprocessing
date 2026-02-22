@@ -10,8 +10,6 @@ DEFAULT_OUTPUT_DIR = '/text_responses_dir'
 
 
 class ServiceRunner(dl.BaseServiceRunner):
-    def __init__(self):
-        self.output_dir = DEFAULT_OUTPUT_DIR
 
     def run(self, item: dl.Item, context: dl.Context) -> dl.Item:
         """
