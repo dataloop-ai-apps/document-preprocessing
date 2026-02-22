@@ -1,0 +1,126 @@
+{
+  "displayName": "Prompt to Text",
+  "name": "prompt_to_text",
+  "scope": "public",
+  "version": "0.0.66",
+  "description": "Extract model responses from prompt items (after VLM prediction) and upload them as text items.",
+  "attributes": {
+    "Category": "Application",
+    "Provider": "Dataloop",
+    "Deployed By": "Dataloop",
+    "License": "Apache 2.0",
+    "Application Type": [
+      "Pipeline Node"
+    ],
+    "Media Type": [
+      "Text"
+    ]
+  },
+  "codebase": {
+    "type": "git",
+    "gitUrl": "https://github.com/dataloop-ai-apps/document-preprocessing.git",
+    "gitTag": "0.0.66"
+  },
+  "components": {
+    "computeConfigs": [
+      {
+        "name": "prompt-to-text-service",
+        "runtime": {
+          "podType": "regular-xs",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/document-preprocessing:0.1.3",
+          "concurrency": 10,
+          "autoscaler": {
+            "minReplicas": 0,
+            "maxReplicas": 2,
+            "queueLength": 10
+          }
+        },
+        "executionTimeout": 60,
+        "drainTime": 10
+      }
+    ],
+    "pipelineNodes": [
+      {
+        "invoke": {
+          "type": "function",
+          "namespace": "prompt-to-text-service.prompt-to-text-module.run"
+        },
+        "name": "prompt-to-text",
+        "categories": [
+          "text-utils"
+        ],
+        "displayName": "Prompt to Text",
+        "description": "Extract model responses from prompt items and upload them as text items.",
+        "scope": "project",
+        "configuration": {
+          "fields": [
+            {
+              "name": "name",
+              "title": "Node Name",
+              "props": {
+                "title": true,
+                "type": "string",
+                "default": "Prompt-to-Text",
+                "required": true,
+                "placeholder": "Insert node name"
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-input"
+            },
+            {
+              "name": "output_dir",
+              "title": "Text Items Output Directory",
+              "props": {
+                "title": true,
+                "type": "string",
+                "default": "/text_responses_dir",
+                "required": true,
+                "placeholder": "Insert output directory for text response items"
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-input"
+            }
+          ]
+        }
+      }
+    ],
+    "modules": [
+      {
+        "name": "prompt-to-text-module",
+        "computeConfig": "prompt-to-text-service",
+        "entryPoint": "modules/prompt/prompt_to_text/prompt_to_text.py",
+        "className": "ServiceRunner",
+        "initInputs": [],
+        "functions": [
+          {
+            "name": "run",
+            "input": [
+              {
+                "type": "Item",
+                "name": "item"
+              }
+            ],
+            "output": [
+              {
+                "type": "Item",
+                "name": "item"
+              }
+            ],
+            "displayIcon": "icon-dl-langchain",
+            "displayName": "Prompt to Text"
+          }
+        ]
+      }
+    ]
+  }
+}
