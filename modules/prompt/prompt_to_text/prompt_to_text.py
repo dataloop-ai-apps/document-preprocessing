@@ -43,6 +43,11 @@ class ServiceRunner(dl.BaseServiceRunner):
 
         # Combine all response texts (typically there's one per prompt key)
         full_response = "\n\n".join(response_texts)
+
+        text_prefix = node_config.get('text_prefix', '')
+        if text_prefix:
+            full_response = text_prefix + full_response
+
         logger.info(f"Extracted response ({len(full_response)} chars) from prompt item {item.id}")
 
         # Build the text item name from the prompt item name
@@ -73,12 +78,25 @@ class ServiceRunner(dl.BaseServiceRunner):
         else:
             logger.warning(f"No frame_indices found in prompt item {item.id} user metadata")
 
+        frame_timestamps = item.metadata.get('user', {}).get('frame_timestamps', None)
+        if frame_timestamps is not None:
+            uploaded_item.metadata['user']['frame_timestamps'] = frame_timestamps
+            logger.info(f"Copied frame_timestamps {frame_timestamps} to text item metadata")
+
         origin_video_name = item.metadata.get('origin_video_name', None)
         if origin_video_name is not None:
             uploaded_item.metadata['origin_video_name'] = origin_video_name
-        created_time = item.metadata.get('created_time', None)
-        if created_time is not None:
-            uploaded_item.metadata['created_time'] = created_time
+        run_time = item.metadata.get('time', None)
+        if run_time is not None:
+            uploaded_item.metadata['time'] = run_time
+
+        source_type = node_config.get('source_type', None)
+        if source_type is not None:
+            uploaded_item.metadata['user']['source_type'] = source_type
+
+        chunk_index = item.metadata.get('user', {}).get('chunk_index', None)
+        if chunk_index is not None:
+            uploaded_item.metadata['user']['chunk_index'] = chunk_index
 
         uploaded_item = uploaded_item.update()
 
