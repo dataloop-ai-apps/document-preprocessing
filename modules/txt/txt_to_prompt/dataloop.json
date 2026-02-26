@@ -2,7 +2,7 @@
   "displayName": "Text to Prompt",
   "name": "txt_to_prompt",
   "scope": "public",
-  "version": "0.0.68",
+  "version": "0.0.69",
   "description": "Convert text items into prompt items for model inference. Reads a .txt file, wraps its content as a user prompt in a PromptItem, and uploads it to the dataset.",
   "attributes": {
     "Category": "Application",
@@ -19,7 +19,7 @@
   "codebase": {
     "type": "git",
     "gitUrl": "https://github.com/dataloop-ai-apps/document-preprocessing.git",
-    "gitTag": "0.0.68"
+    "gitTag": "0.0.69"
   },
   "components": {
     "computeConfigs": [
