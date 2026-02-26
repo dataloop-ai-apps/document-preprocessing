@@ -1,0 +1,162 @@
+{
+  "displayName": "Text to Prompt",
+  "name": "txt_to_prompt",
+  "scope": "public",
+  "version": "0.0.67",
+  "description": "Convert text items into prompt items for model inference. Reads a .txt file, wraps its content as a user prompt in a PromptItem, and uploads it to the dataset.",
+  "attributes": {
+    "Category": "Application",
+    "Provider": "Dataloop",
+    "Deployed By": "Dataloop",
+    "License": "Apache 2.0",
+    "Application Type": [
+      "Pipeline Node"
+    ],
+    "Media Type": [
+      "Text"
+    ]
+  },
+  "codebase": {
+    "type": "git",
+    "gitUrl": "https://github.com/dataloop-ai-apps/document-preprocessing.git",
+    "gitTag": "0.0.67"
+  },
+  "components": {
+    "computeConfigs": [
+      {
+        "name": "txt-to-prompt-service",
+        "runtime": {
+          "podType": "regular-xs",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/document-preprocessing:0.1.3",
+          "concurrency": 10,
+          "autoscaler": {
+            "minReplicas": 0,
+            "maxReplicas": 2,
+            "queueLength": 10
+          }
+        },
+        "executionTimeout": 60,
+        "drainTime": 10
+      }
+    ],
+    "pipelineNodes": [
+      {
+        "invoke": {
+          "type": "function",
+          "namespace": "txt-to-prompt-service.txt-to-prompt-module.run"
+        },
+        "name": "txt-to-prompt",
+        "categories": [
+          "text-utils"
+        ],
+        "displayName": "Text to Prompt",
+        "description": "Convert a text item into a prompt item for model inference.",
+        "scope": "project",
+        "configuration": {
+          "fields": [
+            {
+              "name": "name",
+              "title": "Node Name",
+              "props": {
+                "title": true,
+                "type": "string",
+                "default": "Text-to-Prompt",
+                "required": true,
+                "placeholder": "Insert node name"
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-input"
+            },
+            {
+              "name": "output_dir",
+              "title": "Prompt Items Output Directory",
+              "props": {
+                "title": true,
+                "type": "string",
+                "default": "/prompt_items_dir",
+                "required": true,
+                "placeholder": "Insert output directory for prompt items"
+              },
+              "rules": [
+                {
+                  "type": "required",
+                  "effect": "error"
+                }
+              ],
+              "widget": "dl-input"
+            },
+            {
+              "name": "system_prompt",
+              "title": "System Prompt",
+              "props": {
+                "title": true,
+                "type": "string",
+                "default": "",
+                "required": false,
+                "placeholder": "Optional system prompt to prepend to the prompt item"
+              },
+              "rules": [],
+              "widget": "dl-input"
+            },
+            {
+              "name": "metadata_keys_to_extract",
+              "title": "Metadata Keys to Extract",
+              "props": {
+                "title": true,
+                "type": "array",
+                "default": [],
+                "required": false,
+                "placeholder": "e.g. user.frame_indices, origin_video_name, created_time"
+              },
+              "rules": [],
+              "widget": "dl-input"
+            },
+            {
+              "name": "add_metadata_to_prompt",
+              "title": "Add Metadata to Prompt Text",
+              "props": {
+                "type": "boolean",
+                "title": true,
+                "default": false
+              },
+              "widget": "dl-checkbox"
+            }
+          ]
+        }
+      }
+    ],
+    "modules": [
+      {
+        "name": "txt-to-prompt-module",
+        "computeConfig": "txt-to-prompt-service",
+        "entryPoint": "modules/txt/txt_to_prompt/txt_to_prompt.py",
+        "className": "ServiceRunner",
+        "initInputs": [],
+        "functions": [
+          {
+            "name": "run",
+            "input": [
+              {
+                "type": "Item",
+                "name": "item"
+              }
+            ],
+            "output": [
+              {
+                "type": "Item",
+                "name": "item"
+              }
+            ],
+            "displayIcon": "icon-dl-langchain",
+            "displayName": "Text to Prompt"
+          }
+        ]
+      }
+    ]
+  }
+}
