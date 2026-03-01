@@ -68,35 +68,22 @@ class ServiceRunner(dl.BaseServiceRunner):
         )
         logger.info(f"Uploaded text item: {uploaded_item.id} ({uploaded_item.name})")
 
-        # Copy lineage metadata from the prompt item
-        uploaded_item.metadata['user'] = uploaded_item.metadata.get('user', {})
+        user_meta_in = item.metadata.get('user', {})
+        out_user = uploaded_item.metadata.setdefault('user', {})
 
-        frame_indices = item.metadata.get('user', {}).get('frame_indices', None)
-        if frame_indices is not None:
-            uploaded_item.metadata['user']['frame_indices'] = frame_indices
-            logger.info(f"Copied frame_indices {frame_indices} to text item metadata")
-        else:
-            logger.warning(f"No frame_indices found in prompt item {item.id} user metadata")
+        # Propagate all user metadata from the input item
+        out_user.update(user_meta_in)
 
-        frame_timestamps = item.metadata.get('user', {}).get('frame_timestamps', None)
-        if frame_timestamps is not None:
-            uploaded_item.metadata['user']['frame_timestamps'] = frame_timestamps
-            logger.info(f"Copied frame_timestamps {frame_timestamps} to text item metadata")
+        # Backward compat: older pipelines may store these at the metadata top level
+        for key in ('origin_video_name', 'time'):
+            if key not in out_user:
+                value = item.metadata.get(key)
+                if value is not None:
+                    out_user[key] = value
 
-        origin_video_name = item.metadata.get('origin_video_name', None)
-        if origin_video_name is not None:
-            uploaded_item.metadata['origin_video_name'] = origin_video_name
-        run_time = item.metadata.get('time', None)
-        if run_time is not None:
-            uploaded_item.metadata['time'] = run_time
-
-        source_type = node_config.get('source_type', None)
+        source_type = node_config.get('source_type')
         if source_type is not None:
-            uploaded_item.metadata['user']['source_type'] = source_type
-
-        chunk_index = item.metadata.get('user', {}).get('chunk_index', None)
-        if chunk_index is not None:
-            uploaded_item.metadata['user']['chunk_index'] = chunk_index
+            out_user['source_type'] = source_type
 
         uploaded_item = uploaded_item.update()
 
