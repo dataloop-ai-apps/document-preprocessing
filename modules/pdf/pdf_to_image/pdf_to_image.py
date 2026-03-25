@@ -67,23 +67,19 @@ class ServiceRunner(dl.BaseServiceRunner):
         os.makedirs(images_path, exist_ok=True)
         paths = list()
         # The converted images
-        pdf_document = fitz.open(file_path)
+        with fitz.open(file_path) as pdf_document:
+            # Iterate over each page
+            for page_number in range(pdf_document.page_count):
+                # Get the page
+                image_filename = os.path.join(images_path, f"{filename}-{page_number}.png")
+                page = pdf_document.load_page(page_number)
 
-        # Iterate over each page
-        for page_number in range(pdf_document.page_count):
-            # Get the page
-            image_filename = os.path.join(images_path, f"{filename}-{page_number}.png")
-            page = pdf_document.load_page(page_number)
+                # Render the page as an image (PNG)
+                image = page.get_pixmap()
 
-            # Render the page as an image (PNG)
-            image = page.get_pixmap()
-
-            # Save the image to a file
-            image.save(image_filename)
-            paths.append(image_filename)
-
-        # Close the PDF document
-        pdf_document.close()
+                # Save the image to a file
+                image.save(image_filename)
+                paths.append(image_filename)
 
         return paths
 
